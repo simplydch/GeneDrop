@@ -1,0 +1,15 @@
+Package: GeneDrop
+Type: Package
+Title: Drops Genes Down A Pedigree And Tracks Alleles
+Version: 0.1.0
+Author: person('Darren', 'Hunter',
+  email = "D.Hunter@Sheffield.ac.uk"
+  role = c("aut", "cre"))
+Maintainer: Darren Hunter <D.Hunter@Sheffield.ac.uk>
+Description: This package carries out gene-dropping down a provided 
+  pedigree.  It deals with incomplete pedigrees and keeps track of 
+  each alleles route of descent.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
