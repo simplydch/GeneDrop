@@ -4,10 +4,10 @@
 \alias{est_cohort}
 \title{Function to estimate missing cohorts}
 \usage{
-est_cohort(peduse, tt_rep = 2)
+est_cohort(pedigree, tt_rep = 2)
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns}
+\item{pedigree}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns}
 
 \item{tt_rep}{integer. Time to reproduction.  A value of the length of time between
 birth and reproduction. Defaults to 2}
@@ -19,6 +19,9 @@ accurate predictions.  If offspring information is present this is used, based o
 to reproduction.  When offspring data is absent a mean of sibling cohorts is used.
 The function loops using the new estimates until no further cohorts can be
 estimated.
+}
+\examples{
+
 }
 \keyword{cohort}
 \keyword{estimate}

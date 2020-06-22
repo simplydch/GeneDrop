@@ -4,18 +4,21 @@
 \alias{add_missing_parents}
 \title{Function to add missing parents}
 \usage{
-add_missing_parents(peduse, sex = TRUE, cohort = TRUE)
+add_missing_parents(pedigree, sex = TRUE, cohort = TRUE)
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree containing 'ID', 'Sire' and 'Dam' columns}
+\item{pedigree}{A dataframe or matrix. A pedigree containing 'ID', 'Sire' and 'Dam' columns}
 
-\item{Sex}{Indicates if a Sex Column is present in provided pedigree. Defaults to TRUE}
+\item{sex}{Indicates if a Sex Column is present in provided pedigree. Defaults to TRUE}
 
-\item{Cohort}{Indicates if a Cohort Column is present in provided pedigree. Defaults to TRUE}
+\item{cohort}{Indicates if a Cohort Column is present in provided pedigree. Defaults to TRUE}
 }
 \description{
-This function adds indivdiuals to a pedigree that appear as sires or dams but
+This function adds individuals to a pedigree that appear as sires or dams but
 not in the ID column
+}
+\examples{
+
 }
 \keyword{complete}
 \keyword{fix}

@@ -12,8 +12,7 @@
 #' @keywords pedigree complete fix
 #' @export
 #' @examples
-
-
+#'
 find_most_common <- function(values) {
   unique_values <- unique(values)
   value_freqs <- tabulate(match(values, unique_values))

@@ -5,7 +5,7 @@
 \title{Function to complete pedigree links}
 \usage{
 complete_ped_links(
-  peduse,
+  pedigree,
   founders,
   rep_years_sire = c(2, 10),
   rep_years_dam = c(2, 10),
@@ -13,7 +13,7 @@ complete_ped_links(
 )
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree with ID, Sire and Dam, Sex columns}
+\item{pedigree}{A data frame or matrix. A pedigree with ID, Sire and Dam, Sex columns}
 
 \item{founders}{A vector of founder IDs matching those in the pedigree}
 
@@ -23,13 +23,17 @@ active and the second value the time a male is no longer reproductively active. 
 \item{rep_years_dam}{vector. A vector of length 2, the first value is the time until a female is reproductively
 active and the second value the time a female is no longer reproductively active. Default: c(2,10)}
 
-\item{cohort}{An optional vector, the same length of the pedigree containing cohort information which can be
+\item{cohorts}{An optional vector, the same length of the pedigree containing cohort information which can be
 provided if there is not a cohort column in the pedigree}
 }
 \description{
 This fills in missing pedigree links in a random fashion using plausable
 individuals. It for individuals with missing sires or dams it selects a
 parent that could have been alive within a suitable time period
+}
+\examples{
+
+###
 }
 \keyword{complete}
 \keyword{pedigree}

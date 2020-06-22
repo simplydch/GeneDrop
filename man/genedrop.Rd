@@ -43,6 +43,9 @@ the recombination frequency between markers 1 and 2. The final value in the vect
 \description{
 This function carries out gene-dropping down a provided pedigree
 }
+\examples{
+
+}
 \keyword{allele}
 \keyword{gene-dropping}
 \keyword{recombination}

@@ -12,6 +12,9 @@ find_most_common(values)
 \description{
 A function that finds vhich values in a vector which are most common
 }
+\examples{
+
+}
 \keyword{complete}
 \keyword{fix}
 \keyword{pedigree}

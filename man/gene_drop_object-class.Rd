@@ -4,18 +4,29 @@
 \name{gene_drop_object-class}
 \alias{gene_drop_object-class}
 \alias{gene_drop_object}
+\alias{get_pedigree}
+\alias{get_haplotype_info}
+\alias{get_genotype_matrix}
 \alias{id_info}
 \alias{id_ref}
-\alias{genotype_mat}
+\alias{extract_genotype_mat}
 \title{An S4 class to store gene-dropping output}
 \usage{
+get_pedigree(gene_drop_object)
+
+get_haplotype_info(gene_drop_object)
+
+get_genotype_matrix(gene_drop_object)
+
 id_info(gene_drop_object, ids)
 
 id_ref(gene_drop_object, ids)
 
-genotype_mat(gene_drop_object, ids = "ALL", loci = "ALL")
+extract_genotype_mat(gene_drop_object, ids = "ALL", loci = "ALL")
 }
 \arguments{
+\item{gene_drop_object}{A gene_drop_object}
+
 \item{ids}{A scalar or vector of IDs to include. Defaults to ALL}
 
 \item{loci}{A scalar or vector of loci to include. Defaults to ALL}
@@ -25,11 +36,17 @@ An S4 class to store gene-dropping output
 }
 \section{Functions}{
 \itemize{
+\item \code{get_pedigree}: A method to access the pedigree of the gene-drop object
+
+\item \code{get_haplotype_info}: A method to access the haplotype source information of the gene-drop object
+
+\item \code{get_genotype_matrix}: A method to access the genotype matrix of the gene-drop object
+
 \item \code{id_info}: A method to extract the indivdual information from the pedigree
 
 \item \code{id_ref}: A method to get and individuals row reference from the pedigree
 
-\item \code{genotype_mat}: A method to return a genotype matrix
+\item \code{extract_genotype_mat}: A method to return a genotype matrix
 }}
 
 \section{Slots}{
@@ -42,3 +59,6 @@ An S4 class to store gene-dropping output
 \item{\code{pedgree}}{The pedigree that was passed to the gene-dropping function}
 }}
 
+\examples{
+
+}

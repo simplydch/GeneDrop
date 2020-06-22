@@ -18,6 +18,9 @@ each allele of the desecendants  haplotype came from are condensed.
 i.e. (111112222 becomes 1(5)2(4) but in matrix format)
 A list of two matrices is returned, one relating to the sire and one to the dam.
 }
+\examples{
+
+}
 \keyword{condense}
 \keyword{haplotype}
 \keyword{information}

@@ -4,10 +4,10 @@
 \alias{fix_pedigree}
 \title{Function to ensure pedigree is correctly structured for gene dropping}
 \usage{
-fix_pedigree(peduse, sex = TRUE, cohort = TRUE)
+fix_pedigree(pedigree, sex = TRUE, cohort = TRUE)
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns.}
+\item{pedigree}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns.}
 
 \item{sex}{logical or vector. TRUE if sex column is included in pedigree, otherwise
 a vector containing the sex of each individual. Defaults to TRUE}
@@ -22,6 +22,9 @@ pedigree is in the correct format for gene-dropping.  Sex and Cohort can be
 included as columns in the pedigree or provided as seperate vectors.
 It adds in any individuals that are missing and checks sex coding is correct
 and consistent. It returns the pedigree as a matrix
+}
+\examples{
+
 }
 \keyword{complete}
 \keyword{fix}

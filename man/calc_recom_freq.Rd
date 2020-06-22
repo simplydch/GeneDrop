@@ -12,6 +12,9 @@ calc_recom_freq(map_dist)
 \description{
 A function to calculate recombination frequency based on kosambi map distances
 }
+\examples{
+
+}
 \keyword{frequency}
 \keyword{kosambi}
 \keyword{recombination}

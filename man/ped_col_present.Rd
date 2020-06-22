@@ -4,14 +4,19 @@
 \alias{ped_col_present}
 \title{Function to check  pedigree columns}
 \usage{
-ped_col_present(peduse, check_column = c())
+ped_col_present(pedigree, check_column = c())
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A Pedigree}
+\item{pedigree}{A dataframe or matrix. A Pedigree}
+
+\item{check_column}{A vector of additional columns to check, empty by default}
 }
 \description{
 This function checks if ID, Sire and Dam Columns,
 and any other required columns are present in the pedigree
+}
+\examples{
+
 }
 \keyword{check}
 \keyword{pedigree}

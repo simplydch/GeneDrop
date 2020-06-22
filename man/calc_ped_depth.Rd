@@ -4,14 +4,17 @@
 \alias{calc_ped_depth}
 \title{Function to calculate pedigree depth}
 \usage{
-calc_ped_depth(peduse)
+calc_ped_depth(pedigree)
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns}
+\item{pedigree}{A dataframe or matrix. A pedigree with ID, Sire and Dam columns}
 }
 \description{
 This function calculates pedigree depth each individual in a pedigree by finding the
 number to descendant generations
+}
+\examples{
+
 }
 \keyword{complete}
 \keyword{fix}

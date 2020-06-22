@@ -4,14 +4,17 @@
 \alias{test_order}
 \title{Function to check pedigree order}
 \usage{
-test_order(peduse)
+test_order(pedigree)
 }
 \arguments{
-\item{peduse}{A dataframe or matrix. A pedigree containing 'ID', 'Sire' and 'Dam' columns}
+\item{pedigree}{A dataframe or matrix. A pedigree containing 'ID', 'Sire' and 'Dam' columns}
 }
 \description{
 This function checks if sires and dams are appearing after offspring
 and returns TRUE or FALSE.
+}
+\examples{
+
 }
 \keyword{order}
 \keyword{pedigree}
