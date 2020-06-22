@@ -12,7 +12,7 @@
 #' @keywords pedigree complete fix
 #' @export
 #' @examples
-#'
+
 
 find_most_common <- function(values) {
   unique_values <- unique(values)
