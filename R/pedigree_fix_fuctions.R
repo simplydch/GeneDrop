@@ -334,7 +334,7 @@ est_cohort<-function(peduse, tt_rep=2){
 #' individuals. It for individuals with missing sires or dams it selects a
 #' parent that could have been alive within a suitable time period
 #' @param peduse A dataframe or matrix. A pedigree with ID, Sire and Dam, Sex columns
-#' @param founders A numeric vector the length of the pedigree with 1 indicating a founder and 0 a non-founder
+#' @param founders A vector of founder IDs matching those in the pedigree
 #' @param rep_years_sire vector. A vector of length 2, the first value is the time until a male is reproductively
 #' active and the second value the time a male is no longer reproductively active. Default: c(2,10)
 #' @param rep_years_dam vector. A vector of length 2, the first value is the time until a female is reproductively
@@ -355,6 +355,16 @@ complete_ped_links<-function(peduse, founders,
   # Check columns are present
   ped_col_present(peduse, c('Sex'))
 
+  # Check founders are present in pedigree
+  if(any(is.na(match(founders, pedigree[,'ID'])))){
+    stop(paste0("Not all founder IDs are present in the pedigree"), call. = FALSE)
+  }
+
+  # Set-up founder reference
+
+  founder_ref <- as.logical(match(pedigree[,'ID'], c(founders,'aaa'), nomatch = 0))
+
+
   # If cohorts aren't provided seperately extract them from pedigree
   if(is.null(cohorts)){
     ped_col_present(peduse, c('Sex', 'Cohort'))
@@ -374,8 +384,8 @@ complete_ped_links<-function(peduse, founders,
   new_dam[ ,1] <- peduse[ , 'Dam']
 
   # Set founders as 0
-  new_sire[as.logical(founders), ] <- 0
-  new_dam[as.logical(founders), ] <- 0
+  new_sire[founder_ref, ] <- 0
+  new_dam[founder_ref, ] <- 0
 
   # Find max and min possible cohorts of parents based on reproductive ages
   range_dam_high <- peduse[,'Cohort'] - rep_years_dam[1]
@@ -389,11 +399,11 @@ complete_ped_links<-function(peduse, founders,
   dam_ref <- which(peduse[,'Sex'] == 2)
   sire_ref <- which(peduse[,'Sex'] == 1)
 
-  # Find individuals that need estimated dams and sires
-  dam_to_est <- which(founders == 0 & new_dam == 0)
-  sire_to_est <- which(founders == 0 & new_sire == 0)
+  # Find individuals that need estimated dams and sires (no parent but not founder)
+  dam_to_est <- which(!founder_ref & new_dam == 0)
+  sire_to_est <- which(!founder_ref & new_sire == 0)
 
-  # Assign a random dam born within calculated window to those withouth known parent
+  # Assign a random dam born within calculated window to those without known parent
   new_dam[dam_to_est,] <- sapply(matrix(dam_to_est), function(x){
     t <- which(cohorts >= range_dam_low[x] & cohorts <= range_dam_high[x])
     t2 <- t[t %in% dam_ref]

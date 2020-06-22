@@ -2,9 +2,13 @@
 
 export(add_missing_parents)
 export(calc_ped_depth)
+export(calc_recom_freq)
 export(complete_ped_links)
 export(est_cohort)
 export(find_most_common)
 export(fix_pedigree)
+export(genedrop)
 export(ped_col_present)
+export(reduce_hap_code)
 export(test_order)
+exportClasses(gene_drop_object)

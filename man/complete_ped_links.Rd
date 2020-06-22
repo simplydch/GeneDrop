@@ -15,7 +15,7 @@ complete_ped_links(
 \arguments{
 \item{peduse}{A dataframe or matrix. A pedigree with ID, Sire and Dam, Sex columns}
 
-\item{founders}{A numeric vector the length of the pedigree with 1 indicating a founder and 0 a non-founder}
+\item{founders}{A vector of founder IDs matching those in the pedigree}
 
 \item{rep_years_sire}{vector. A vector of length 2, the first value is the time until a male is reproductively
 active and the second value the time a male is no longer reproductively active. Default: c(2,10)}
