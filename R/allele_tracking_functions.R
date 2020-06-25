@@ -67,7 +67,10 @@ setMethod(
 )
 
 .check_loci <- function(loci, gene_drop_out) {
-  if (!(is.numeric(loci) && length(loci) == 1)) {
+
+  loci <- tryCatch(as.numeric(loci), error=function(e) e, warning =function(w) w)
+
+  if ((is(loci, 'warning')) || length(loci) != 1) {
     stop("Provided loci is not a numeric value",  call. = FALSE)
   }
 
@@ -75,7 +78,8 @@ setMethod(
 
   if (!(loci > 0 & loci <= loci_num)) {
     stop(paste0("Please Check Loci Number ", loci), call. = FALSE)
-  }}
+  }
+  return(loci)}
 
 
 
@@ -96,7 +100,7 @@ setMethod(
 allele_track_back_sing <- function(id, loci, gene_drop_out) {
   # Check that the loci number is present in the output
 
-  .check_loci(loci, gene_drop_out)
+  loci<-.check_loci(loci, gene_drop_out)
 
   # Get the pedigree from the gene-drop output
   ped_use <- get_pedigree(gene_drop_out)
@@ -230,7 +234,7 @@ allele_track_back <- function(id, loci, gene_drop_out) {
 
 offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
 
-  .check_loci(loci, gene_drop_out)
+  loci <- .check_loci(loci, gene_drop_out)
 
   # Get pedigree from gene-drop output
   ped_use <- get_pedigree(gene_drop_out)
@@ -318,6 +322,7 @@ offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
 #'
 
 allele_track_forw_sing <- function(id, loci, gene_drop_out) {
+  loci <- .check_loci(loci, gene_drop_out)
   # Set up list to hold values for both alleles
   follow_hap <- rep(list(matrix(NA, nrow = 0, ncol = 3)), 2)
   names(follow_hap) <- c("Allele_Sire", "Allele_Dam")

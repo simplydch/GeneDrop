@@ -34,11 +34,13 @@ setMethod(
   c("gene_drop_object"),
   function(object) {
     cat("A gene_drop_object containing:\n")
-    cat("@genotype_matrix - A genotype matrix with", ncol(object@genotype_matrix), "loci\n")
+    num_loci <- ifelse (length(get_genotype_matrix(object)) > 0, length(get_genotype_matrix(object)[[1]]),0)
+
+    cat("@genotype_matrix - A genotype matrix with", num_loci, "loci\n")
     cat("@haplotype_info - A list containing haplotype information for tracing alleles\n")
-    cat("@pedigree - A pedigree containing", nrow(object@pedigree), "individuals\n")
-  }
-)
+    cat("@pedigree - A pedigree containing", nrow(get_pedigree(object)), "individuals\n")
+  })
+
 
 
 
@@ -203,18 +205,23 @@ reduce_hap_code <- function(sire_hap_info, dam_hap_info) {
 #' provided in map_dist.  Alternatively a vector of the recombination frequencies between each marker can be provided.
 #' The vector should be the same length as the total number of loci in chr_loci_num  The first value in the vector should be
 #' the recombination frequency between markers 1 and 2. The final value in the vector is therefore redundant but should be included
-#' (e.g. as 0.  Values between chromosomes are best set to 0.5 although this happens automaticaly during gene-dropping.
+#' (e.g. as 0.  Values between chromosomes are best set to 0.5 although this happens automatically during gene-dropping.
+#' @param progress logical, default TRUE.  Determines in progress should be displayed will gene-dropping
 #' @keywords gene-dropping recombination segregation allele tracking
 #' @export
 #' @examples
 #'
 genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
-                     to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi") {
+                     to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi", progress=TRUE) {
 
 
   # Check pedigree
   ped_col_present(pedigree)
 
+  # Make sure ID's aren't present multiple times
+  if (any(duplicated(pedigree[,'ID']))) {
+    stop('Some individuals appear more than one in pedigree')
+  }
 
   gene_drop_out <- new("gene_drop_object", pedigree = pedigree)
 
@@ -308,11 +315,6 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
 
   gd_hap[sort(c(gd_founders * 2 - 1, gd_founders * 2))] <- hap_split
 
-  ### Code for testing - inserts a unique allele (3) for one individual so it can be traced
-  id_ref <- which(pedigree[, "ID"] == 8555)
-
-  gd_hap[[id_ref * 2 - 1]][1024] <- convert_to_raw(3)
-
 
   ### Set Recombination frequencies between chromosomes as 0.5
   recom_freq_vec <- c(0.5, recom_freq_vec[1:length(recom_freq_vec) - 1])
@@ -322,7 +324,12 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   ### Set up list for haplotype codes
   hap_code_list <- rep(list(list()), length(gd_nonfounders) * 2)
 
-
+  # Basic Progress Bar
+  if (progress == TRUE){
+    cat("Gene-dropping to", length(gd_nonfounders), "individuals:\n")
+    split_50 <- floor(length(gd_nonfounders)/50)
+    cat('|',paste0(rep('-',50)),'|','\n', sep='')
+    cat('|')}
   ### Establish genotype for each non-founder individual
   for (ind in 1:length(gd_nonfounders)) {
     n <- gd_nonfounders[ind]
@@ -356,8 +363,12 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
 
     ### Write haplotype codes to list (for tracing)
     hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- reduce_hap_code(hap1_code, hap2_code)
-  }
 
+    if (progress == TRUE & ind %% split_50 == 0){
+      cat('-')}
+  }
+  if (progress == TRUE){
+    cat('|\n')}
   gene_drop_out@haplotype_info <- hap_code_list
   gene_drop_out@genotype_matrix <- gd_hap
 

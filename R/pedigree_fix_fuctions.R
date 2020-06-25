@@ -25,6 +25,25 @@ ped_col_present <- function(pedigree, check_column = c()) {
 }
 
 
+#' Function to convert cohorts to numeric values
+#'
+#' This function trys to return a vector of numerical values
+#' fora cohort and produces an error if this isn't possible
+#' @param cohorts A vector or matrix holding cohort information
+#' @keywords cohort numeric check
+#' @export
+#' @examples
+#'
+cohort_numeric <- function(cohorts){
+  cohorts <- tryCatch(as.numeric(cohorts), error=function(e) e, warning =function(w) w)
+
+  if(is(cohorts, 'warning')){
+    stop("Some cohorts can't be interpretted as numeric (or NA), estimation can't proceed")
+  }
+  cohorts
+}
+
+
 
 #' Function to check pedigree order
 #'
@@ -55,9 +74,9 @@ test_order <- function(pedigree) {
 add_missing_parents <- function(pedigree, sex = TRUE, cohort = TRUE) {
   names_keep <- c("ID", "Sire", "Dam", "Sex", "Cohort")
   ### Find any sire IDs that appear as parents but not in ID column
-  # Ignore 0's which indicate foudners
+  # Ignore 0's which indicate founders
   sire_not_id <- unique(pedigree[, "Sire"][is.na(match(pedigree[, "Sire"], pedigree[, "ID"]))])
-  sire_not_id <- sire_not_id[!sire_not_id == 0]
+  sire_not_id <- sire_not_id[!sire_not_id == 0 & !is.na(sire_not_id)]
 
   ### If there are no missing sires create empty matrix
   # else set-up matrix with sire info
@@ -70,7 +89,7 @@ add_missing_parents <- function(pedigree, sex = TRUE, cohort = TRUE) {
   ### Find any dam IDs that appear as parents but not in ID column
   # Ignore 0's which indicate foudners
   dam_not_id <- unique(pedigree[, "Dam"][is.na(match(pedigree[, "Dam"], pedigree[, "ID"]))])
-  dam_not_id <- dam_not_id[!dam_not_id == 0]
+  dam_not_id <- dam_not_id[!dam_not_id == 0 & !is.na(dam_not_id)]
 
   ### If there are no missing dams create empty matrix
   # else set-up matrix with dam info
@@ -186,9 +205,26 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 
 
   # Find id, sire and dam columns
-  sire_col <- grep("sire|dad|father", ignore.case = TRUE, colnames(pedigree))
-  dam_col <- grep("mom|mum|dam|mother", ignore.case = TRUE, colnames(pedigree))
+  poss_sire_names<-c('sire','dad','father')
+  poss_dam_names<-c('mum','mom','dam','mother')
+  sire_col <- grep(paste0(c(poss_sire_names,
+                            paste0(poss_sire_names,'id'),
+                            paste0(poss_sire_names,'_id'),
+                            paste0('id',poss_sire_names),
+                            paste0('id_',poss_sire_names)),
+                            collapse = '|'),
+                            ignore.case = TRUE, colnames(pedigree))
+  dam_col <- grep(paste0(c(poss_dam_names,
+                           paste0(poss_dam_names,'id'),
+                           paste0(poss_dam_names,'_id'),
+                           paste0('id',poss_dam_names),
+                           paste0('id_',poss_dam_names)),
+                           collapse = '|'),
+                           ignore.case = TRUE, colnames(pedigree))
   id_col <- grep("id", ignore.case = TRUE, colnames(pedigree))
+
+  #remove possible matches with Sire and Dam columns
+  id_col <- id_col[!id_col %in% (c(dam_col, sire_col))]
 
   # Check that ID, Sire and Dam columns can be identified
   if (any(!length(sire_col) == 1, !length(dam_col) == 1, !length(id_col) == 1)) {
@@ -219,6 +255,28 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   if (!oldnames == newnames) {
     cat(paste0("Note: Columns ", oldnames, " reordered and/or renamed as ", newnames, "\n"))
   }
+
+
+  if (any(duplicated(pedigree[,'ID']))) {
+    stop('Some individuals appear more than one in pedigree')
+  }
+
+  sire_na_0 <- FALSE
+  dam_na_0 <- FALSE
+  if (any(is.na(pedigree['Sire']))) {
+    sire_na_0 <- TRUE
+    pedigree[,'Sire'] <- ifelse(is.na(pedigree[,'Sire']), 0, pedigree[,'Sire'])
+  }
+
+  if (any(is.na(pedigree['Dam']))) {
+    dam_na_0 <- TRUE
+    pedigree[,'Dam'] <- ifelse(is.na(pedigree[,'Dam']), 0, pedigree[,'Dam'])
+  }
+
+  if(any(c(dam_na_0, sire_na_0))){
+    cat(paste0("Note: NA values in Sire and Dam columns changed to 0\n"))
+  }
+
 
   # Add any parents that are missing
   pedigree <- add_missing_parents(pedigree, sex = sex, cohort = cohort)
@@ -260,8 +318,8 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   # Print message if there has been recoding
   if (org_sire_sex_code != 1 | org_dam_sex_code != 2) {
     message(paste0(
-      "Note: Sex of individuals have been recoded. Sires now 1 (were ", org_sire_sex_code,
-      "). Dams now 2 (were ", org_dam_sex_code, ")"
+      "Note: Sex of individuals have been recoded. Sires now '1' (were '", org_sire_sex_code,
+      "'). Dams now '2' (were '", org_dam_sex_code, "')"
     ))
   }
 
@@ -273,8 +331,14 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   pedigree[unique(sire_ref), "Sex"] <- 1
 
   # Print message if any changes have been made i.e dams with male sex code
-  if (any(pedigree[, "Sex"] != sex_codes)) {
+  if (any(pedigree[, "Sex"] != sex_codes, na.rm=TRUE)) {
     message(paste0("Note: Sex of some individuals have been changed due to parent data"))
+  }
+
+
+  # Warn if there are individuals that do not have a cohort
+  if (!is.null(cohort_col) && any(is.na(pedigree[, "Cohort"]))) {
+    message("Note: Individuals added do not have a cohort. This may be required for gene-dropping. Using est_cohort might help")
   }
 
   # If pedigree is already in correct order return it
@@ -286,10 +350,6 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 
   order2 <- calc_ped_depth(pedigree)
 
-  # Warn if there are indivdiuals that do not have a cohort
-  if (!is.null(cohort_col) && any(is.na(pedigree[, "Cohort"]))) {
-    message("Note: Individuals added do not have a cohort. This may be required for gene-dropping. Using est_cohort might help")
-  }
   return(pedigree[order(order2), ])
   # data.frame(pedigree)
 }
@@ -323,13 +383,19 @@ est_cohort <- function(pedigree, tt_rep = 2) {
   sire_ref <- match(pedigree[, "Sire"], pedigree[, "ID"], nomatch = 0)
   dam_ref <- match(pedigree[, "Dam"], pedigree[, "ID"], nomatch = 0)
 
-  # Get cohorts
-  cohorts <- pedigree[, "Cohort"]
+  # Get cohorts interpretted
+
+
+  ## Convert cohorts to numeric valuies
+
+  cohorts <-cohort_numeric(pedigree[, "Cohort"])
 
   # Loop until no new cohorts are being estimated
   while (any(is.na(cohorts))) {
     # initial number of cohorts missing (x)
     x <- length(cohorts[is.na(cohorts)])
+
+
 
     cohorts <- sapply(matrix(1:length(cohorts)), function(x) {
       # if cohort isn't NA don't do anything
@@ -430,6 +496,8 @@ complete_ped_links <- function(pedigree, founders,
     cohorts <- pedigree[, "Cohort"]
   }
 
+  cohorts <-cohort_numeric(pedigree[, "Cohort"])
+
   # convert any NA's in Dam or Sire column to 0's
   pedigree[is.na(pedigree[, "Dam"]), "Dam"] <- 0
   pedigree[is.na(pedigree[, "Sire"]), "Sire"] <- 0
@@ -448,11 +516,11 @@ complete_ped_links <- function(pedigree, founders,
   new_dam[founder_ref, ] <- 0
 
   # Find max and min possible cohorts of parents based on reproductive ages
-  range_dam_high <- pedigree[, "Cohort"] - rep_years_dam[1]
-  range_dam_low <- pedigree[, "Cohort"] - rep_years_dam[2]
+  range_dam_high <- cohorts - rep_years_dam[1]
+  range_dam_low <- cohorts - rep_years_dam[2]
 
-  range_sire_high <- pedigree[, "Cohort"] - rep_years_sire[1]
-  range_sire_low <- pedigree[, "Cohort"] - rep_years_sire[2]
+  range_sire_high <- cohorts - rep_years_sire[1]
+  range_sire_low <- cohorts - rep_years_sire[2]
 
 
   # Get Sire and Dam row references

@@ -11,7 +11,8 @@ genedrop(
   found_hap,
   to_raw = TRUE,
   sample_hap = TRUE,
-  recom_freq = "kosambi"
+  recom_freq = "kosambi",
+  progress = TRUE
 )
 }
 \arguments{
@@ -38,7 +39,9 @@ must be twice the numeber of founders present in the pedigree}
 provided in map_dist.  Alternatively a vector of the recombination frequencies between each marker can be provided.
 The vector should be the same length as the total number of loci in chr_loci_num  The first value in the vector should be
 the recombination frequency between markers 1 and 2. The final value in the vector is therefore redundant but should be included
-(e.g. as 0.  Values between chromosomes are best set to 0.5 although this happens automaticaly during gene-dropping.}
+(e.g. as 0.  Values between chromosomes are best set to 0.5 although this happens automatically during gene-dropping.}
+
+\item{progress}{logical, default TRUE.  Determines in progress should be displayed will gene-dropping}
 }
 \description{
 This function carries out gene-dropping down a provided pedigree
