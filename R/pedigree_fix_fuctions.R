@@ -4,6 +4,7 @@
 #####                                       #####
 
 
+
 #' Function to check  pedigree columns
 #'
 #' This function checks if ID, Sire and Dam Columns,
@@ -172,8 +173,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
     stop("Cohort should be TRUE or a vector")
   }
 
-  # If passed dataframe convert to matrix (faster to work with)
-  pedigree <- as.matrix(pedigree)
+
 
   # Check that cohort and sex vectors are correct structure if passed
   if (!is.logical(cohort) & !length(cohort) == nrow(pedigree)) {
@@ -256,6 +256,9 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
     cat(paste0("Note: Columns ", oldnames, " reordered and/or renamed as ", newnames, "\n"))
   }
 
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)){
+  pedigree <- do.call(cbind, pedigree)}
 
   if (any(duplicated(pedigree[,'ID']))) {
     stop('Some individuals appear more than one in pedigree')

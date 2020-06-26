@@ -119,19 +119,27 @@ setMethod(
   "extract_genotype_mat",
   c("gene_drop_object"),
   function(gene_drop_object, ids = "ALL", loci = "ALL") {
-    if (length(ids) == 1 && ids == "ALL") {
-      return(t(sapply(slot(gene_drop_object, "genotype_matrix"), as.numeric)))
+    if ((length(ids) == 1 && ids == "ALL") & (length(loci) == 1 && loci == "ALL")) {
+      return(matrix(as.numeric(do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
+                    nrow =length(slot(gene_drop_object, "genotype_matrix"))))
     } else {
-      id_list <- id_ref(gene_drop_01, ids)
+      if (length(ids) == 1 && ids == "ALL"){ids = get_pedigree(gene_drop_object)[,'ID']}
+      if (length(loci) == 1 && loci == "ALL"){loci = c(1:length(slot(gene_drop_object, "genotype_matrix")[[1]]))}
+        else{loci<-sapply(loci,function(x).check_loci(x, gene_drop_object))} # TODO change this to be more efficient
+
+      id_list <- id_ref(gene_drop_object, ids)
       if (any(is.na(id_list))) {
         stop("ID provided is not in predigree")
       }
+
       refs <- c(id_list * 2 - 1, id_list * 2)
       id_names <- paste0("ID_", ids)
       loci_names <- paste0("L_", rep(loci, each = 2), "_", rep(c("01", "02"), length(loci)))
-      # refs <- c(refs[seq(1,length(refs),2)], refs[seq(2,length(refs),2)])
-      mat_out <- (sapply(slot(gene_drop_object, "genotype_matrix")[c(refs)], function(x) as.numeric(x[loci])))
-      return(matrix(t(mat_out), nrow = length(id_list), dimnames = list(id_names, loci_names)))
+
+      mat_out <-matrix(sapply(get_genotype_matrix(gene_drop_object)[refs],'[',loci), byrow = TRUE,
+                       nrow=length(refs))
+
+      return(matrix((as.numeric(mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))
     }
   }
 )

@@ -66,22 +66,6 @@ setMethod(
   }
 )
 
-.check_loci <- function(loci, gene_drop_out) {
-
-  loci <- tryCatch(as.numeric(loci), error=function(e) e, warning =function(w) w)
-
-  if ((is(loci, 'warning')) || length(loci) != 1) {
-    stop("Provided loci is not a numeric value",  call. = FALSE)
-  }
-
-  loci_num <- length(get_genotype_matrix(gene_drop_out)[[1]])
-
-  if (!(loci > 0 & loci <= loci_num)) {
-    stop(paste0("Please Check Loci Number ", loci), call. = FALSE)
-  }
-  return(loci)}
-
-
 
 ###
 #' Function to track a gene-dropped allele back through ancestors
@@ -388,3 +372,6 @@ allele_track_forw <- function(id, loci, gene_drop_out) {
     return(allele_track_all)
   }
 }
+
+
+
