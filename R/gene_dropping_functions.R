@@ -377,8 +377,8 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   }
   if (progress == TRUE){
     cat('|\n')}
-  gene_drop_out@haplotype_info <- hap_code_list
-  gene_drop_out@genotype_matrix <- gd_hap
+  slot(gene_drop_object, "haplotype_info") <- hap_code_list
+  slot(gene_drop_object, "genotype_matrix") <- gd_hap
 
   return(gene_drop_out)
 }
