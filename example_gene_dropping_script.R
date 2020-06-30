@@ -190,7 +190,7 @@ matplot(apply(allele_count, 2, function(x) x/cohort_size), type='l',
 # the output file will be large.
 
 write.table(extract_genotype_mat(gene_drop_out),
-            output.file,row.names=FALSE, col.names=FALSE, quote=FALSE))
+            output.file,row.names=FALSE, col.names=FALSE, quote=FALSE)
 
 
 
