@@ -13,6 +13,7 @@
 #' @slot genotype_matrix A list of vectors each storing a haplotype
 #' @slot haplotype_info A list containing haplotype information for tracing alleles
 #' @slot pedgree The pedigree that was passed to the gene-dropping function
+#' @slot map_info A matrix containing mapping information and recombination frequencies used
 #' @param gene_drop_object A gene_drop_object
 #' @export
 #' @examples
@@ -21,7 +22,8 @@ gene_drop_object <- setClass("gene_drop_object",
   slots = c(
     genotype_matrix = "list",
     haplotype_info = "list",
-    pedigree = "matrix"
+    pedigree = "matrix",
+    map_info = "matrix"
   )
 )
 
@@ -39,6 +41,7 @@ setMethod(
     cat("@genotype_matrix - A genotype matrix with", num_loci, "loci\n")
     cat("@haplotype_info - A list containing haplotype information for tracing alleles\n")
     cat("@pedigree - A pedigree containing", nrow(get_pedigree(object)), "individuals\n")
+    cat("@map_info - A matrix containing mapping and recombination frequency information\n")
   })
 
 
@@ -65,6 +68,18 @@ setMethod(
   c("gene_drop_object"),
   function(gene_drop_object) {
     return(slot(gene_drop_object, "haplotype_info"))
+  }
+)
+
+#' @describeIn gene_drop_object-class A method to access the mapping information of the gene-drop object
+#' @export
+
+setGeneric("get_map_info", function(gene_drop_object) standardGeneric("get_map_info"))
+setMethod(
+  "get_map_info",
+  c("gene_drop_object"),
+  function(gene_drop_object) {
+    return(slot(gene_drop_object, "map_info"))
   }
 )
 
@@ -275,7 +290,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   }
 
 
-  ### Calculate reconbination frequencies
+  ### Calculate recombination frequencies
 
   if (length(recom_freq) == 1 && recom_freq == "kosambi") {
     recom_freq_vec <- apply(matrix(map_dist / 100), 1, calc_recom_freq)
@@ -287,6 +302,9 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
       "of probabilities (<=1 and >=0) the same length as the genotype (", loci_num, ")"
     ))
   }
+
+
+
 
 
   ### Get parent row references
@@ -323,6 +341,11 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
 
   gd_hap[sort(c(gd_founders * 2 - 1, gd_founders * 2))] <- hap_split
 
+  ### Store mapping information
+
+  map_info <- cbind(Chromosome = rep(1:length(chr_loci_num), chr_loci_num),
+                    cMDiff = map_dist,
+                    recom_freq = recom_freq_vec)
 
   ### Set Recombination frequencies between chromosomes as 0.5
   recom_freq_vec <- c(0.5, recom_freq_vec[1:length(recom_freq_vec) - 1])
@@ -336,8 +359,8 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   if (progress == TRUE){
     cat("Gene-dropping to", length(gd_nonfounders), "individuals:\n")
     split_50 <- floor(length(gd_nonfounders)/50)
-    cat('|',paste0(rep('-',50)),'|','\n', sep='')
-    cat('|')}
+    cat('0%|',paste0(rep('-',50)),'|100%','\n', sep='')
+    cat('  |')}
   ### Establish genotype for each non-founder individual
   for (ind in 1:length(gd_nonfounders)) {
     n <- gd_nonfounders[ind]
@@ -379,6 +402,8 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     cat('|\n')}
   slot(gene_drop_out, "haplotype_info") <- hap_code_list
   slot(gene_drop_out, "genotype_matrix") <- gd_hap
+  slot(gene_drop_out, "map_info") <- map_info
+
 
   return(gene_drop_out)
 }
