@@ -97,18 +97,24 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
     stop(paste0("ID ", id, " Not in Original Pedigree"))
   }
 
-  # Get the relevant references for the genotype matrix
-  id_rows <- c(id_ref * 2 - 1, id_ref * 2)
+  # Get founder information
+  gd_founders <-
+    which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
+  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders]
 
+  # Get the relevant references for the genotype matrix
+
+  #id_rows <- c(id_ref * 2 - 1, id_ref * 2)
+
+
+  row_sel_1 <- match(id_ref, gd_nonfounders)
+  row_inf_id<- c(row_sel_1 * 2 - 1, row_sel_1 * 2)
   # Get sire and dam references
   sire_ref <- match(ped_use[, "Sire"], ped_use[, "ID"], nomatch = 0)
   dam_ref <- match(ped_use[, "Dam"], ped_use[, "ID"], nomatch = 0)
 
   int_par <- c(sire_ref[id_ref], dam_ref[id_ref])
 
-  # Get founder information
-  gd_founders <-
-    which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
 
   #  Set up list of matrices to store output
   allele_track <- rep(list(matrix(NA, nrow = 0, ncol = 2)), 2)
@@ -119,13 +125,13 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
     # Get parent reference
     par_id_ref <- int_par[hap]
     # Get haplotype row reference
-    row_sel <- id_rows[hap]
+    row_sel <- row_inf_id[hap]
     # Check if there are parents and proceed if true
     parents <- ifelse(par_id_ref == 0, FALSE, TRUE)
     while (parents == TRUE) {
       # Get the correct haplotype code information from gene-drop output
       par_hap_list <-
-        get_haplotype_info(gene_drop_out)[(row_sel - (length(gd_founders)) * 2)][[1]]
+        get_haplotype_info(gene_drop_out)[(row_sel)][[1]]
       # Take the groups from the haplotype code output
       # groups are stretches between crossovers
       groups <- cumsum(par_hap_list[1,])
@@ -146,9 +152,9 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
         parents <- FALSE
         break
       }
-
       # Get haplotype row reference
-      row_sel <- c(par_id_ref * 2 - 1, par_id_ref * 2)[par_hap]
+      row_inf<-match(par_id_ref, gd_nonfounders)
+      row_sel <- c(row_inf * 2 - 1,row_inf * 2)[par_hap]
       # Get parent refernce
       par_id_ref <- c(sire, dam)[par_hap]
     }
@@ -251,11 +257,12 @@ offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
 
   # Get founder information
   gd_founders <- which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
-
+  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders]
   ### Get row references
   # TODO Try to find a simpler method.
   # Get row references of genotype matrix
-  row_sel <- c(off_ref * 2 - 1, off_ref * 2)
+  row_sel_1 <- match(which(ped_use[,'ID'] %in% offs_id), gd_nonfounders)
+  row_sel <- c(row_sel_1 * 2 - 1, row_sel_1 * 2)
   # Split these into a list of each pair belonging to offspring
   row_sel <- split(row_sel, c(seq(length(row_sel) / 2)))
   # Extract the correct reference from each pair based on parents sex
@@ -263,13 +270,14 @@ offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
   rowref <- mapply(function(x, y) x[y], row_sel, sex_list)
 
   # Get the correct haplotype code information from gene-drop output
-  par_hap_list <- get_haplotype_info(gene_drop_out)[rowref - (length(gd_founders)) * 2]
+  par_hap_list <- get_haplotype_info(gene_drop_out)[rowref]
 
   # Take the groups from the haplotype code output
   # groups are stretches between crossovers
   groups <- lapply(par_hap_list, function(x) cumsum(x[1, ]))
   # Find the group that the loci is in
-  ref <- lapply(groups, function(x) unname(table(factor(x < loci, c("TRUE", "FALSE")))["TRUE"] + 1))
+  ref <- lapply(groups, function(x) unname(table(factor(x < loci,
+                                  c("TRUE", "FALSE")))["TRUE"] + 1))
 
   # Get haplotype info for loci in offspring
   par_hap <- mapply(function(x, y) y[2, x], ref, par_hap_list)
