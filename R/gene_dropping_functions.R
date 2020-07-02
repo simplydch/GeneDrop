@@ -249,14 +249,12 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   gene_drop_out <- new("gene_drop_object", pedigree = pedigree)
 
   if (is.logical(to_raw) & to_raw == FALSE) {
-    convert_to_raw <- function(x) {
-      x
-    }
+    convert_to_raw <- function(x) {x}
+    convert_from_raw <- function(x){x}
   } else if (is.logical(to_raw) & to_raw == TRUE) {
-    convert_to_raw <- function(x) {
-      as.raw(x)
-    }
-  } else {
+    convert_to_raw <- function(x) {as.raw(x)}
+    convert_from_raw <- function(x){as.numeric(x)}
+    } else {
     stop("to_raw should be TRUE or FALSE")
   }
 
@@ -273,7 +271,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   }
 
   if (to_raw == TRUE && any(!is.numeric(found_hap)) && any(found_hap < 0 | found_hap > 255)) {
-    stop("to_raw is TRUE but found_hap contains values that are not between 0 and 255")
+    stop("to_raw is TRUE but found_hap contains values that are not between 0 and 255", call.=FALSE)
   }
 
   ### Check map_dist
@@ -331,7 +329,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     }
     found_samp <- found_hap
   } else {
-    stop(paste0("sample_hap argument should be TRUE or FALSE"), call. = FALSE)
+    stop(paste0("sample_hap argument should be TRUE or FALSE"),call. = FALSE)
   }
 
   ### Set up matrix for haplotypes
@@ -379,14 +377,14 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     hap1_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
 
     ### Get haplotype from sire
-    x_sire_hap <- ifelse(hap1_code == 1, as.numeric(gd_hap[[x_sire[1]]]), as.numeric(gd_hap[[x_sire[2]]]))
+    x_sire_hap <- ifelse(hap1_code == 1, convert_from_raw(gd_hap[[x_sire[1]]]), convert_from_raw(gd_hap[[x_sire[2]]]))
 
     ### Repeat for dams
     crossover <- rbinom(loci_num, 1, recom_freq_vec)
 
     hap2_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
 
-    x_dam_hap <- ifelse(hap2_code == 1, as.numeric(gd_hap[[x_dam[1]]]), as.numeric(gd_hap[[x_dam[2]]]))
+    x_dam_hap <- ifelse(hap2_code == 1, convert_from_raw(gd_hap[[x_dam[1]]]), convert_from_raw(gd_hap[[x_dam[2]]]))
 
     ### Write the genotype to the matrix
     gd_hap[[n * 2 - 1]] <- convert_to_raw(x_sire_hap)
@@ -395,7 +393,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     ### Write haplotype codes to list (for tracing)
     hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- reduce_hap_code(hap1_code, hap2_code)
 
-    if (progress == TRUE & ind %% split_50 == 0){
+    if (progress == TRUE && ind %% split_50 == 0){
       cat('-')}
   }
   if (progress == TRUE){

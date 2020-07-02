@@ -542,7 +542,7 @@ complete_ped_links <- function(pedigree, founders,
       stop(paste0("No possible dams in pedigree for some individuals marked as non-founders. ",
            "Are rep_years_dam correct?"), call.=FALSE)
     }
-    pedigree[t[sample.int(length(t2), 1)], c("ID")]
+    pedigree[t2[sample.int(length(t2), 1)], c("ID")]
   })
 
   # Assign a random sire born within calculated window to those without known parent
@@ -553,7 +553,7 @@ complete_ped_links <- function(pedigree, founders,
       stop(paste0("No possible sires in pedigree for some individuals marked as non-founders. ",
                   "Are rep_years_sire correct?"), call.=FALSE)
     }
-    pedigree[t[sample.int(length(t2), 1)], c("ID")]
+    pedigree[t2[sample.int(length(t2), 1)], c("ID")]
   })
 
   # return pedigree in expected format
