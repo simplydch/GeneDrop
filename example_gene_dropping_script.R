@@ -194,6 +194,18 @@ cohort_size <- cbind(table(get_pedigree(gene_drop_01)[,'Cohort']))
 matplot(apply(allele_count, 2, function(x) x/cohort_size), type='l',
         ylab = "Allele Frequency", xlab="Years Passed")
 
+
+#  You can plot the route of descent of the alleles at a given locus for an individual of interest
+#  using plot_allele_desc, by default background is set to TRUE, this plots the whole pedigree in light grey
+#  but can take a while depending on the size of the pedigree.
+
+plot_allele_desc(
+  gene_drop_object = gene_drop_01,
+  id = founder_id_3[3],
+  loci = 1024,
+  background = FALSE,
+)
+
 # There several options for exporting the genotype matrix but they will all take a while
 
 # You can write a text file with either two lines per individual (format_short = TRUE) or alternatively 1 line per individual
