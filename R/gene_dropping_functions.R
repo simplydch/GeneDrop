@@ -19,12 +19,13 @@
 #' @examples
 #'
 gene_drop_object <- setClass("gene_drop_object",
-  slots = c(
-    genotype_matrix = "list",
-    haplotype_info = "list",
-    pedigree = "matrix",
-    map_info = "matrix"
-  )
+                             slots = c(
+                               genotype_matrix = "list",
+                               haplotype_info = "list",
+                               pedigree = "matrix",
+                               map_info = "matrix",
+                               model_info = "list"
+                             )
 )
 
 
@@ -42,6 +43,7 @@ setMethod(
     cat("@haplotype_info - A list containing haplotype information for tracing alleles\n")
     cat("@pedigree - A pedigree containing", nrow(get_pedigree(object)), "individuals\n")
     cat("@map_info - A matrix containing mapping and recombination frequency information\n")
+    cat("@model_info - A list containing the variable passed to the function\n")
   })
 
 
@@ -80,6 +82,18 @@ setMethod(
   c("gene_drop_object"),
   function(gene_drop_object) {
     return(slot(gene_drop_object, "map_info"))
+  }
+)
+
+#' @describeIn gene_drop_object-class A method to access the variables passed to the model
+#' @export
+
+setGeneric("get_model_info", function(gene_drop_object) standardGeneric("get_model_info"))
+setMethod(
+  "get_model_info",
+  c("gene_drop_object"),
+  function(gene_drop_object) {
+    return(slot(gene_drop_object, "model_info"))
   }
 )
 
@@ -135,12 +149,17 @@ setMethod(
   c("gene_drop_object"),
   function(gene_drop_object, ids = "ALL", loci = "ALL") {
     if ((length(ids) == 1 && ids == "ALL") & (length(loci) == 1 && loci == "ALL")) {
-      return(matrix(as.numeric(do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
-                    nrow =length(slot(gene_drop_object, "genotype_matrix"))))
+      if(slot(gene_drop_object, "model_info")['to_raw']==TRUE){
+        return(matrix(as.numeric(do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
+                      nrow =length(slot(gene_drop_object, "genotype_matrix"))))}
+      else{
+        return(matrix((do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
+                      nrow =length(slot(gene_drop_object, "genotype_matrix"))))}
+
     } else {
       if (length(ids) == 1 && ids == "ALL"){ids = get_pedigree(gene_drop_object)[,'ID']}
       if (length(loci) == 1 && loci == "ALL"){loci = c(1:length(slot(gene_drop_object, "genotype_matrix")[[1]]))}
-        else{loci<-sapply(loci,function(x).check_loci(x, gene_drop_object))} # TODO change this to be more efficient
+      else{loci<-sapply(loci,function(x).check_loci(x, gene_drop_object))} # TODO change this to be more efficient
 
       id_list <- id_ref(gene_drop_object, ids)
       if (any(is.na(id_list))) {
@@ -153,11 +172,15 @@ setMethod(
 
       mat_out <-matrix(sapply(get_genotype_matrix(gene_drop_object)[refs],'[',loci), byrow = TRUE,
                        nrow=length(refs))
-
-      return(matrix((as.numeric(mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))
+      if(slot(gene_drop_object, "model_info")['to_raw']==TRUE){
+        return(matrix((as.numeric(mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))}
+      else{
+        return(matrix(((mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))
+      }
     }
   }
 )
+
 
 
 #' Function to calculate recombination frequency
@@ -246,7 +269,14 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     stop('Some individuals appear more than one in pedigree')
   }
 
-  gene_drop_out <- new("gene_drop_object", pedigree = pedigree)
+  ### Get model info
+
+  model_info <-list()
+  model_info['model_arguments'] <-list(sys.call())
+  model_info<-c(model_info,as.list(environment())[6:9])
+
+  gene_drop_out <- new("gene_drop_object", pedigree = pedigree,
+                       model_info = model_info)
 
   if (is.logical(to_raw) & to_raw == FALSE) {
     convert_to_raw <- function(x) {x}
@@ -254,7 +284,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   } else if (is.logical(to_raw) & to_raw == TRUE) {
     convert_to_raw <- function(x) {as.raw(x)}
     convert_from_raw <- function(x){as.numeric(x)}
-    } else {
+  } else {
     stop("to_raw should be TRUE or FALSE")
   }
 
@@ -262,6 +292,12 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   loci_num <- sum(chr_loci_num)
 
   # Check founder haplotypes
+
+  # Deal with a vector being passed and convert to matrix
+
+  if (!(is.matrix(found_hap) | is.data.frame(found_hap))){
+    found_hap <- matrix(found_hap, nrow = length(found_hap))
+  }
 
   if (dim(found_hap)[2] != loci_num) {
     stop(paste0(
@@ -319,7 +355,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   ### correct founders
 
   if (is.logical(sample_hap) && sample_hap == TRUE) {
-    found_samp <- found_hap[sample(nrow(found_hap), length(gd_founders) * 2, replace = TRUE), ]
+    found_samp <- found_hap[sample(nrow(found_hap), length(gd_founders) * 2, replace = TRUE),, drop = FALSE ]
   } else if (is.logical(sample_hap) && sample_hap == FALSE) {
     if (nrow(found_hap) != length(gd_founders) * 2) {
       stop(paste0(
@@ -365,8 +401,13 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
 
     ### get sire and dam info for focal individual
     x_sire <- c(sire_ref[n] * 2 - 1, sire_ref[n] * 2)
+    if (any(x_sire<1)){cat('\n')
+      stop("Sire missing, individuals are present with a single missing parent",call. = FALSE)
+    }
     x_dam <- c(dam_ref[n] * 2 - 1, dam_ref[n] * 2)
-
+    if (any(x_dam<1)){cat('\n')
+      stop("Dam missing, individuals are present with a single missing parent",call. = FALSE)
+    }
 
     ### Establish where recombination events will occur
     ### and which haplotype comes from each chromosome

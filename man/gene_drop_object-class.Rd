@@ -8,6 +8,7 @@
 \alias{get_pedigree}
 \alias{get_haplotype_info}
 \alias{get_map_info}
+\alias{get_model_info}
 \alias{get_genotype_matrix}
 \alias{id_info}
 \alias{id_ref}
@@ -21,6 +22,8 @@ get_pedigree(gene_drop_object)
 get_haplotype_info(gene_drop_object)
 
 get_map_info(gene_drop_object)
+
+get_model_info(gene_drop_object)
 
 get_genotype_matrix(gene_drop_object)
 
@@ -72,6 +75,8 @@ An S4 class to store gene-dropping output
 \item \code{get_haplotype_info}: A method to access the haplotype source information of the gene-drop object
 
 \item \code{get_map_info}: A method to access the mapping information of the gene-drop object
+
+\item \code{get_model_info}: A method to access the variables passed to the model
 
 \item \code{get_genotype_matrix}: A method to access the genotype matrix of the gene-drop object
 

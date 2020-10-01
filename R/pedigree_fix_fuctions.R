@@ -88,7 +88,7 @@ add_missing_parents <- function(pedigree, sex = TRUE, cohort = TRUE) {
     colnames(sire_not_id) <- names_keep
   }
   ### Find any dam IDs that appear as parents but not in ID column
-  # Ignore 0's which indicate foudners
+  # Ignore 0's which indicate founders
   dam_not_id <- unique(pedigree[, "Dam"][is.na(match(pedigree[, "Dam"], pedigree[, "ID"]))])
   dam_not_id <- dam_not_id[!dam_not_id == 0 & !is.na(dam_not_id)]
 
