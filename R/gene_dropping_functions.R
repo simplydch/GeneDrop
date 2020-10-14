@@ -368,8 +368,17 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
   if (!is.logical(founders_unk)){
     gd_samp_found <- match(founders_unk, pedigree[, "ID"])
     gd_founders <- gd_founders[!gd_founders %in% gd_samp_found]
-    gd_nonfounders_all <- sort(c(gd_nonfounders, gd_samp_found))}
-  else{
+    gd_nonfounders_all <- sort(c(gd_nonfounders, gd_samp_found))
+
+    # Get cohort info
+    cohorts <- cohort_numeric(pedigree[ ,'Cohort'])
+    cohort_min <- min(cohorts)
+
+    if (any(pedigree[gd_samp_found, c('Sire','Dam')] !=0)){
+      stop("Some individuals provided in founders_unk are not set as founders in pedigree")
+    }
+
+  }else{
     gd_nonfounders_all <- gd_nonfounders
   }
 
@@ -424,8 +433,12 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
     if (!is.logical(founders_unk) && n %in% gd_samp_found){
       # get cohort
-      foc_cohort <- pedigree[n,'Cohort']
+
+      foc_cohort <- cohorts[n]
       samp_cohorts <- foc_cohort:(foc_cohort + 1 - founders_unk_cohorts)
+      if (any(samp_cohorts < cohort_min)){
+        stop('founders_unk_cohorts range is too large, trying to sample from cohorts not in pedigree')
+      }
       foc_cohort_refs <- which(pedigree[,'Cohort'] %in% samp_cohorts)
 
       # remove sampled founders
