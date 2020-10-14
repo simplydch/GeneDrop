@@ -37,6 +37,8 @@ founder_haplotypes<-GeneDropEx_hap
 
 founder_haplotypes[255,1024]<-3
 
+
+
 ## Run fix_pedigree on the file to ensure it is in the correct order
 # and that required columns are present
 pedigree <- fix_pedigree(GeneDropEx_ped)
@@ -53,18 +55,24 @@ founders <- pedigree[pedigree[, 'Cohort'] < 1990, 'ID']
 
 length(founders)
 
+## Demonstrate using founders that need haplotypes sampled
+
+samp_found <- sample(pedigree[which(pedigree[,'Cohort'] > 1989),][,'ID'], 10)
+
 # Set a seed so the results are repeatable
 set.seed(48298)
 
 # Run complete_ped_links to randomly fill in missing pedigree links
-ped_completed <- complete_ped_links(pedigree, founders)
-
+ped_completed <- complete_ped_links(pedigree, founders,
+                                    founders_unk = samp_found
+)
 # Perform gene-dropping
 gene_drop_01 <- genedrop(
   pedigree = ped_completed,
   map_dist = map_distances,
   chr_loci_num = chrom_loci_num,
   found_hap = founder_haplotypes,
+  founders_unk = samp_found,
   to_raw = TRUE
 )
 
@@ -165,7 +173,7 @@ row_ref = mapply(function(x, y) c(x * 2 - 1, x * 2)[y],
 unlist(lapply(get_genotype_matrix(gene_drop_01)[row_ref], function(x)
   as.numeric(x[1024])))
 
-# All the alleles tracked back from the sre should be the same too
+# All the alleles tracked back from the sire should be the same too
 
 id_ref <- id_ref(gene_drop_01, get_allele_sire(tr_3_for)[,'ID'])
 row_ref = mapply(function(x, y) c(x * 2 - 1, x * 2)[y],
@@ -218,7 +226,7 @@ write_file(gene_drop_01, filename = "GeneDrop_out", format_short = FALSE)
 # means the 1024 locus is not biallelic
 
 write_bed(  gene_drop_01,  filename = "GeneDrop_out",  cM_positions = GeneDropEx_map[,'cMPosition'],
-  gen_positions = GeneDropEx_map[,'GenomicPosition'],
+            gen_positions = GeneDropEx_map[,'GenomicPosition'],
 )
 
 

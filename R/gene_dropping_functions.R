@@ -242,6 +242,11 @@ reduce_hap_code <- function(sire_hap_info, dam_hap_info) {
 #' @param chr_loci_num A vector containing the number of loci on each chromosome
 #' @param found_hap A vector of founder haplotypes, if sample_hap=FALSE the pair of haplotypes for each individual should
 #' in the same order as in the provided pedigree
+#' @param founders_unk A vector of founders with no associated haplotypes, these individuals have their haplotypes generated
+#' during gene-dropping based on allele frequencies
+#' @param founders_unk_cohorts A scalar which determines the cohorts used to generated haplotypes for individuals in the
+#' founders_unk vector.  The default is 1 which uses only haplotypes from the same cohort, 2 would use the
+#' current same cohort along with the previous one and so on.
 #' @param to_raw logical TRUE or FALSE.  If TRUE the genotypes is stored are raw vectors.  This allows quicker gene-dropping
 #' and reduces the size of the output.  It must be FALSE if alleles do not all have numeric values between 0 and 255
 #' @param sample_hap logical TRUE or FALSE.  If TRUE founder haplotypes are assigned to founders at random.  If FALSE
@@ -257,8 +262,19 @@ reduce_hap_code <- function(sire_hap_info, dam_hap_info) {
 #' @export
 #' @examples
 #'
-genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
+genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk = FALSE, founders_unk_cohorts = 1,
                      to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi", progress=TRUE) {
+
+  # Check founder_sample
+  if (is.logical(founders_unk) && founders_unk == TRUE) {
+    stop("founders_unk should be FALSE or a vector")
+  }
+
+  # Check founder_unk_cohort
+
+  if (!(length(founders_unk_cohorts)==1 && is.numeric(founders_unk_cohorts) && founders_unk_cohorts > 0)){
+    stop("founders_unk_cohorts is not a single numeric value greater than 0")
+  }
 
 
   # Check pedigree
@@ -273,7 +289,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
 
   model_info <-list()
   model_info['model_arguments'] <-list(sys.call())
-  model_info<-c(model_info,as.list(environment())[6:9])
+  model_info<-c(model_info,as.list(environment())[6:11])
 
   gene_drop_out <- new("gene_drop_object", pedigree = pedigree,
                        model_info = model_info)
@@ -338,9 +354,6 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   }
 
 
-
-
-
   ### Get parent row references
   sire_ref <- match(pedigree[, "Sire"], pedigree[, "ID"], nomatch = 0)
   dam_ref <- match(pedigree[, "Dam"], pedigree[, "ID"], nomatch = 0)
@@ -350,6 +363,15 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
   gd_founders <- which(pedigree[, "Sire"] == 0 & pedigree[, "Dam"] == 0)
   gd_nonfounders <- c(1:nrow(pedigree))[!1:nrow(pedigree) %in% gd_founders]
 
+  ### Get references for founders without associated haplotypes
+
+  if (!is.logical(founders_unk)){
+    gd_samp_found <- match(founders_unk, pedigree[, "ID"])
+    gd_founders <- gd_founders[!gd_founders %in% gd_samp_found]
+    gd_nonfounders_all <- sort(c(gd_nonfounders, gd_samp_found))}
+  else{
+    gd_nonfounders_all <- gd_nonfounders
+  }
 
   ### Randomly assign founder haplotypes to matrix if sample=TRUE, otherwise add genotypes to
   ### correct founders
@@ -396,53 +418,78 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap,
     cat('0%|',paste0(rep('-',50)),'|100%','\n', sep='')
     cat('  |')}
   ### Establish genotype for each non-founder individual
-  for (ind in 1:length(gd_nonfounders)) {
-    n <- gd_nonfounders[ind]
+  for (ind in 1:length(gd_nonfounders_all)) {
 
-    ### get sire and dam info for focal individual
-    x_sire <- c(sire_ref[n] * 2 - 1, sire_ref[n] * 2)
-    if (any(x_sire<1)){cat('\n')
-      stop("Sire missing, individuals are present with a single missing parent",call. = FALSE)
-    }
-    x_dam <- c(dam_ref[n] * 2 - 1, dam_ref[n] * 2)
-    if (any(x_dam<1)){cat('\n')
-      stop("Dam missing, individuals are present with a single missing parent",call. = FALSE)
-    }
+    n <- gd_nonfounders_all[ind]
 
-    ### Establish where recombination events will occur
-    ### and which haplotype comes from each chromosome
-    crossover <- rbinom(loci_num, 1, recom_freq_vec)
+    if (!is.logical(founders_unk) && n %in% gd_samp_found){
+      # get cohort
+      foc_cohort <- pedigree[n,'Cohort']
+      samp_cohorts <- foc_cohort:(foc_cohort + 1 - founders_unk_cohorts)
+      foc_cohort_refs <- which(pedigree[,'Cohort'] %in% samp_cohorts)
 
-    ### Code new haplotype as 1 or 2 depending on which sire haplotype they come from
+      # remove sampled founders
+      foc_cohort_refs <- foc_cohort_refs[!foc_cohort_refs %in% gd_samp_found]
+      foc_cohort_refs <- c(foc_cohort_refs * 2 -1, foc_cohort_refs * 2)
+      sam_hap <- apply(do.call(rbind,gd_hap[foc_cohort_refs]),2,function(x) sample(x,2))
 
-    hap1_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
+      x_sire_hap<-sam_hap[1,]
+      x_dam_hap<-sam_hap[2,]
 
-    ### Get haplotype from sire
-    x_sire_hap <- ifelse(hap1_code == 1, convert_from_raw(gd_hap[[x_sire[1]]]), convert_from_raw(gd_hap[[x_sire[2]]]))
+      gd_hap[[n * 2 - 1]] <- convert_to_raw(x_sire_hap)
+      gd_hap[[n * 2]] <- convert_to_raw(x_dam_hap)
 
-    ### Repeat for dams
-    crossover <- rbinom(loci_num, 1, recom_freq_vec)
+      hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- NA
 
-    hap2_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
 
-    x_dam_hap <- ifelse(hap2_code == 1, convert_from_raw(gd_hap[[x_dam[1]]]), convert_from_raw(gd_hap[[x_dam[2]]]))
+      if (progress == TRUE && ind %% split_50 == 0){
+        cat('-')}
 
-    ### Write the genotype to the matrix
-    gd_hap[[n * 2 - 1]] <- convert_to_raw(x_sire_hap)
-    gd_hap[[n * 2]] <- convert_to_raw(x_dam_hap)
+    } else{
 
-    ### Write haplotype codes to list (for tracing)
-    hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- reduce_hap_code(hap1_code, hap2_code)
 
-    if (progress == TRUE && ind %% split_50 == 0){
-      cat('-')}
-  }
+      ### get sire and dam info for focal individual
+      x_sire <- c(sire_ref[n] * 2 - 1, sire_ref[n] * 2)
+      if (any(x_sire<1)){cat('\n')
+        stop("Sire missing, individuals are present with a single missing parent",call. = FALSE)
+      }
+      x_dam <- c(dam_ref[n] * 2 - 1, dam_ref[n] * 2)
+      if (any(x_dam<1)){cat('\n')
+        stop("Dam missing, individuals are present with a single missing parent",call. = FALSE)
+      }
+
+      ### Establish where recombination events will occur
+      ### and which haplotype comes from each chromosome
+      crossover <- rbinom(loci_num, 1, recom_freq_vec)
+
+      ### Code new haplotype as 1 or 2 depending on which sire haplotype they come from
+
+      hap1_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
+
+      ### Get haplotype from sire
+      x_sire_hap <- ifelse(hap1_code == 1, convert_from_raw(gd_hap[[x_sire[1]]]), convert_from_raw(gd_hap[[x_sire[2]]]))
+
+      ### Repeat for dams
+      crossover <- rbinom(loci_num, 1, recom_freq_vec)
+
+      hap2_code <- ifelse(cumsum(crossover) %% 2 == 0, 1, 2)
+
+      x_dam_hap <- ifelse(hap2_code == 1, convert_from_raw(gd_hap[[x_dam[1]]]), convert_from_raw(gd_hap[[x_dam[2]]]))
+      ### Write the genotype to the matrix
+      gd_hap[[n * 2 - 1]] <- convert_to_raw(x_sire_hap)
+      gd_hap[[n * 2]] <- convert_to_raw(x_dam_hap)
+
+      ### Write haplotype codes to list (for tracing)
+      hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- reduce_hap_code(hap1_code, hap2_code)
+
+      if (progress == TRUE && ind %% split_50 == 0){
+        cat('-')}
+    }}
   if (progress == TRUE){
     cat('|\n')}
   slot(gene_drop_out, "haplotype_info") <- hap_code_list
   slot(gene_drop_out, "genotype_matrix") <- gd_hap
   slot(gene_drop_out, "map_info") <- map_info
-
 
   return(gene_drop_out)
 }

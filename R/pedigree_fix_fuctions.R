@@ -174,14 +174,11 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   }
 
 
-
   # Check that cohort and sex vectors are correct structure if passed
   if (!is.logical(cohort) & !length(cohort) == nrow(pedigree)) {
     stop("Provided cohort vector is wrong length or structure")
   }
-  if (!is.logical(sex) & !length(sex) == nrow(pedigree)) {
-    stop("Provided sex vector is wrong length or structure")
-  }
+
 
   # Check that sex column exists in pedigree if Sex is set to TRUE
   if (is.logical(sex) && sex == TRUE) {
@@ -212,15 +209,15 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
                             paste0(poss_sire_names,'_id'),
                             paste0('id',poss_sire_names),
                             paste0('id_',poss_sire_names)),
-                            collapse = '|'),
-                            ignore.case = TRUE, colnames(pedigree))
+                          collapse = '|'),
+                   ignore.case = TRUE, colnames(pedigree))
   dam_col <- grep(paste0(c(poss_dam_names,
                            paste0(poss_dam_names,'id'),
                            paste0(poss_dam_names,'_id'),
                            paste0('id',poss_dam_names),
                            paste0('id_',poss_dam_names)),
-                           collapse = '|'),
-                           ignore.case = TRUE, colnames(pedigree))
+                         collapse = '|'),
+                  ignore.case = TRUE, colnames(pedigree))
   id_col <- grep("id", ignore.case = TRUE, colnames(pedigree))
 
   #remove possible matches with Sire and Dam columns
@@ -258,7 +255,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 
   # If passed dataframe convert to matrix (faster to work with)
   if (is.data.frame(pedigree)){
-  pedigree <- do.call(cbind, pedigree)}
+    pedigree <- do.call(cbind, pedigree)}
 
   if (any(duplicated(pedigree[,'ID']))) {
     stop('Some individuals appear more than one in pedigree')
@@ -347,13 +344,13 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   # If pedigree is already in correct order return it
   if (!test_order(pedigree)) {
     return(pedigree)
-  }
+  }else{
 
-  # Otherwise re-order pedigiree
+    # Otherwise re-order pedigree
 
-  order2 <- calc_ped_depth(pedigree)
+    order2 <- calc_ped_depth(pedigree)
 
-  return(pedigree[order(order2), ])
+    return(pedigree[order(order2), ])}
   # data.frame(pedigree)
 }
 
@@ -363,7 +360,8 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 #' A function that estimates cohorts for individuals without a known cohort.
 #' It uses only pedigree and cohort information and should be secondary to more
 #' accurate predictions.  If offspring information is present this is used, based on a provided
-#' to reproduction.  When offspring data is absent a mean of sibling cohorts is used.
+#' to reproduction.  When offspring data is absent a mean of sibling cohorts for siblings born
+#' after the cohort of the youngest parent is used.
 #' The function loops using the new estimates until no further cohorts can be
 #' estimated.
 #'
@@ -376,20 +374,18 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 #'
 est_cohort <- function(pedigree, tt_rep = 2) {
 
-  # TODO Add seperate time to reproduction for males and females?
+  # TODO Add separate time to reproduction for males and females?
   #     Will this make the function less general?
 
   # Check columns are present
   ped_col_present(pedigree, c("Cohort"))
 
   # Get sire and dam row numbers
-  sire_ref <- match(pedigree[, "Sire"], pedigree[, "ID"], nomatch = 0)
-  dam_ref <- match(pedigree[, "Dam"], pedigree[, "ID"], nomatch = 0)
-
-  # Get cohorts interpretted
+  sire_ref <- match(pedigree[, "Sire"], pedigree[, "ID"], nomatch = NA)
+  dam_ref <- match(pedigree[, "Dam"], pedigree[, "ID"], nomatch = NA)
 
 
-  ## Convert cohorts to numeric valuies
+  ## Convert cohorts to numeric values
 
   cohorts <-cohort_numeric(pedigree[, "Cohort"])
 
@@ -398,6 +394,14 @@ est_cohort <- function(pedigree, tt_rep = 2) {
     # initial number of cohorts missing (x)
     x <- length(cohorts[is.na(cohorts)])
 
+
+    # Get sire and dam cohorts
+    sire_cohort <- pedigree[sire_ref, "Cohort"]
+    dam_cohort <- pedigree[dam_ref, "Cohort"]
+
+    # Find the cohort of the youngest parent
+    earliest_pos_cohort <- ifelse((!is.na(sire_cohort) & sire_cohort >= dam_cohort) | is.na(dam_cohort),
+                                  sire_cohort,dam_cohort)
 
 
     cohorts <- sapply(matrix(1:length(cohorts)), function(x) {
@@ -424,8 +428,9 @@ est_cohort <- function(pedigree, tt_rep = 2) {
       # Remove NA's and calculate mean across siblings from both sire and dam
       sib_by <- c(sib_ref_s, sib_ref_d)
       sib_by <- sib_by[!is.na(sib_by)]
+      # Remove siblings born before youngest parent
+      sib_by <- sib_by[which(sib_by > earliest_pos_cohort[x])]
       est_bs_sib <- ifelse(length(sib_by) > 0, round(mean(sib_by, 0)), NA)
-
 
       ##  Estimate based on first offspring
       # Find offspring cohort as sire and then dam
@@ -463,6 +468,8 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 #' parent that could have been alive within a suitable time period
 #' @param pedigree A data frame or matrix. A pedigree with ID, Sire and Dam, Sex columns
 #' @param founders A vector of founder IDs matching those in the pedigree
+#' @param founders_unk A vector of individuals that are to be treated as founders but which do not have haplotypes
+#' associated with them
 #' @param rep_years_sire vector. A vector of length 2, the first value is the time until a male is reproductively
 #' active and the second value the time a male is no longer reproductively active. Default: c(2,10)
 #' @param rep_years_dam vector. A vector of length 2, the first value is the time until a female is reproductively
@@ -474,11 +481,24 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 #' @examples
 #'
 #' ###
-complete_ped_links <- function(pedigree, founders,
+complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
                                rep_years_sire = c(2, 10),
                                rep_years_dam = c(2, 10),
                                cohorts = NULL) {
 
+
+  # Check founder_unk is in correct format
+  if (is.logical(founders_unk) && founders_unk == TRUE) {
+    stop("founders_unk should be FALSE or a vector")
+  }
+
+  # Combine both types of founders
+
+  if (!is.logical(founders_unk)){
+    founders_all <- c(founders,founders_unk )
+  }else{
+    founders_all <- founders
+  }
 
   # Check columns are present
   ped_col_present(pedigree, c("Sex"))
@@ -490,7 +510,7 @@ complete_ped_links <- function(pedigree, founders,
 
   # Set-up founder reference
 
-  founder_ref <- as.logical(match(pedigree[, "ID"], c(founders), nomatch = 0))
+  founder_ref <- as.logical(match(pedigree[, "ID"], founders_all, nomatch = 0))
 
 
   # If cohorts aren't provided separately extract them from pedigree
@@ -540,7 +560,7 @@ complete_ped_links <- function(pedigree, founders,
     t2 <- t[t %in% dam_ref]
     if (length(t2)<1) {
       stop(paste0("No possible dams in pedigree for some individuals marked as non-founders. ",
-           "Are rep_years_dam correct?"), call.=FALSE)
+                  "Are rep_years_dam correct?"), call.=FALSE)
     }
     pedigree[t2[sample.int(length(t2), 1)], c("ID")]
   })
@@ -558,24 +578,43 @@ complete_ped_links <- function(pedigree, founders,
 
   # return pedigree in expected format
   pedigree <- matrix(c(pedigree[, "ID"], new_sire, new_dam, pedigree[, "Sex"], pedigree[, "Cohort"]),
-    ncol = 5,
-    dimnames = (list(NULL, c("ID", "Sire", "Dam", "Sex", "Cohort")))
+                     ncol = 5,
+                     dimnames = (list(NULL, c("ID", "Sire", "Dam", "Sex", "Cohort")))
   )
 
   ## Ensure pedigree is in correct order etc
   pedigree_out <- fix_pedigree(pedigree)
 
+  pedigree_out <- pedigree_out[order(pedigree_out[,'Cohort']),]
+
+  ## Find references of all founders
   found_in_ped <- which(pedigree_out[, "Sire"] == 0 & pedigree_out[, "Dam"] == 0)
 
-  if (length(found_in_ped) != length(founders)){
+  ## Check number of founders in final pedigree is correct
+  if (length(found_in_ped) != length(founders_all)){
     stop(paste0("Number of founders in returned pedigree (", length(found_in_ped),
-            ") is not equal to the number of founders provided (", length(founders),")"))
+                ") is not equal to the number of founders provided (", length(founders_all),")"))
 
   }
 
+  # Get cohorts for each founder with unknown haplotypes
+
+  if (!is.logical(founders_unk)){
+    samp_cohorts <- pedigree_out[match(founders_unk, pedigree_out[,'ID']),'Cohort']
+
+    #  Place founder individuals with unknown haplotypes after all other individuals
+    # In their cohort
+    for (y in samp_cohorts){
+      all_cohorts <- which(pedigree_out[,'Cohort'] == y)
+      samp_refs <- match(founders_unk[which(samp_cohorts == y)],pedigree_out[,'ID'])
+      new_order <- c(all_cohorts[!all_cohorts %in% samp_refs], samp_refs)
+      pedigree_out[all_cohorts,] <- pedigree_out[new_order,]
+    }}
+
   # Sort founders so they are in same order as that provided
+  ped_known_found <- which(pedigree_out[,'ID'] %in% founders)
   ped_founders <- pedigree_out[match(founders, pedigree_out[,'ID']),]
-  pedigree_out[found_in_ped,] <- ped_founders
+  pedigree_out[ped_known_found,] <- ped_founders
 
   return(pedigree_out)
 }

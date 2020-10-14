@@ -11,8 +11,8 @@
   # Get pedigree from gene-drop object
   pedigree <- get_pedigree(gene_drop_object)
 
-  # Extract the cohort (for the x-coordinates)
-  x <- pedigree[, "Cohort"]
+  # Extract the cohort (for the x-coordinates) and ensure they are numeric
+  x <- cohort_numeric(pedigree[, "Cohort"])
 
   # Generate evenly spaced y-coordinates
   y <- do.call(c, lapply(tabulate(x), function(x) seq(1, 10, length = x)))
@@ -93,8 +93,8 @@
   hap_dam <- match(c(parent_track[, "Hap"]), 2)[1:(length(parent_track[, "ID"]))]
 
   # convert indexes to IDs
-  sire_links <- hap_sire * c(parent_track[, "ID"])
-  dam_links <- hap_dam * c(parent_track[, "ID"])
+  sire_links <- ifelse(hap_sire ==0, 0, c(parent_track[, "ID"]))
+  dam_links <- ifelse(hap_dam ==0, 0, c(parent_track[, "ID"]))
 
   # get id references for tracked individuals
   id_refs <- c(id_ref(gene_drop_object, c(id, parent_track[, "ID"])))
@@ -132,8 +132,8 @@
 
   # convert indexes to IDs
 
-  sire_points <- sexes_sire * c(parent_track[, "ID"])
-  dam_points <- sexes_dam * c(parent_track[, "ID"])
+  sire_points <- ifelse(hap_sire ==0, 0, c(parent_track[, "ID"]))
+  dam_points <- ifelse(hap_dam ==0, 0, c(parent_track[, "ID"]))
 
   # get coordinates of sires
 

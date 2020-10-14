@@ -98,9 +98,15 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
   }
 
   # Get founder information
-  gd_founders <-
-    which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
-  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders]
+
+  gd_founders <- which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
+  founders_unk <- slot(gene_drop_out, 'model_info')[['founders_unk']]
+  gd_founders_unk <- which(ped_use[,'ID'] %in% founders_unk)
+
+  gd_founders_kn <- gd_founders[which(!gd_founders %in% gd_founders_unk)]
+
+  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders_kn]
+
 
   # Get the relevant references for the genotype matrix
 
@@ -130,8 +136,7 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
     parents <- ifelse(par_id_ref == 0, FALSE, TRUE)
     while (parents == TRUE) {
       # Get the correct haplotype code information from gene-drop output
-      par_hap_list <-
-        get_haplotype_info(gene_drop_out)[(row_sel)][[1]]
+      par_hap_list <- get_haplotype_info(gene_drop_out)[(row_sel)][[1]]
       # Take the groups from the haplotype code output
       # groups are stretches between crossovers
       groups <- cumsum(par_hap_list[1,])
@@ -162,7 +167,7 @@ allele_track_back_sing <- function(id, loci, gene_drop_out) {
     row_names <- paste0("Cohort_", ped_use[allele_track[[hap]][, 1], c("Cohort")])
     # Extract info from pedigree and add to output
     allele_track[[hap]] <- cbind( rbind(ped_use[allele_track[[hap]][, 1],
-                                  c("ID", "Sex")]),
+                                                c("ID", "Sex")]),
                                   Hap = allele_track[[hap]][, 2])
 
     if (length(allele_track[[hap]]) > 0) {
@@ -257,7 +262,12 @@ offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
 
   # Get founder information
   gd_founders <- which(ped_use[, "Sire"] == 0 & ped_use[, "Dam"] == 0)
-  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders]
+  founders_unk <- slot(gene_drop_out, 'model_info')[['founders_unk']]
+  gd_founders_unk <- which(ped_use[,'ID'] %in% founders_unk)
+
+  gd_founders_kn <- gd_founders[which(!gd_founders %in% gd_founders_unk)]
+
+  gd_nonfounders <- c(1:nrow(ped_use))[!1:nrow(ped_use) %in% gd_founders_kn]
   ### Get row references
   # TODO Try to find a simpler method.
   # Get row references of genotype matrix
@@ -277,7 +287,7 @@ offspring_with_allele <- function(id, loci, hap, gene_drop_out) {
   groups <- lapply(par_hap_list, function(x) cumsum(x[1, ]))
   # Find the group that the loci is in
   ref <- lapply(groups, function(x) unname(table(factor(x < loci,
-                                  c("TRUE", "FALSE")))["TRUE"] + 1))
+                                                        c("TRUE", "FALSE")))["TRUE"] + 1))
 
   # Get haplotype info for loci in offspring
   par_hap <- mapply(function(x, y) y[2, x], ref, par_hap_list)
@@ -347,7 +357,7 @@ allele_track_forw_sing <- function(id, loci, gene_drop_out) {
     }
   }
   return(new("allele_track_object",
-    id = id, locus = loci, allele_sire = follow_hap[[1]], allele_dam = follow_hap[[2]]
+             id = id, locus = loci, allele_sire = follow_hap[[1]], allele_dam = follow_hap[[2]]
   ))
 }
 
@@ -369,8 +379,8 @@ allele_track_forw_sing <- function(id, loci, gene_drop_out) {
 allele_track_forw <- function(id, loci, gene_drop_out) {
   id_loci <- matrix(c(rep(id, each = length(loci)), rep(loci, length(id))), ncol = 2)
   allele_track_all <- lapply(split(id_loci, 1:nrow(id_loci)), function(x) {
-      allele_track_forw_sing(x[[1]], x[[2]], gene_drop_out)
-    })
+    allele_track_forw_sing(x[[1]], x[[2]], gene_drop_out)
+  })
   # Name list based on ID and loci info
   names(allele_track_all) <-
     paste("ID", id_loci[, 1], "LOCI", id_loci[, 2], sep = "_")
