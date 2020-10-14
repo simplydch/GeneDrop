@@ -16,7 +16,8 @@ birth and reproduction. Defaults to 2}
 A function that estimates cohorts for individuals without a known cohort.
 It uses only pedigree and cohort information and should be secondary to more
 accurate predictions.  If offspring information is present this is used, based on a provided
-to reproduction.  When offspring data is absent a mean of sibling cohorts is used.
+to reproduction.  When offspring data is absent a mean of sibling cohorts for siblings born
+after the cohort of the youngest parent is used.
 The function loops using the new estimates until no further cohorts can be
 estimated.
 }

@@ -7,6 +7,7 @@
 complete_ped_links(
   pedigree,
   founders,
+  founders_unk = FALSE,
   rep_years_sire = c(2, 10),
   rep_years_dam = c(2, 10),
   cohorts = NULL
@@ -16,6 +17,9 @@ complete_ped_links(
 \item{pedigree}{A data frame or matrix. A pedigree with ID, Sire and Dam, Sex columns}
 
 \item{founders}{A vector of founder IDs matching those in the pedigree}
+
+\item{founders_unk}{A vector of individuals that are to be treated as founders but which do not have haplotypes
+associated with them}
 
 \item{rep_years_sire}{vector. A vector of length 2, the first value is the time until a male is reproductively
 active and the second value the time a male is no longer reproductively active. Default: c(2,10)}

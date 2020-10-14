@@ -9,6 +9,8 @@ genedrop(
   map_dist,
   chr_loci_num,
   found_hap,
+  founders_unk = FALSE,
+  founders_unk_cohorts = 1,
   to_raw = TRUE,
   sample_hap = TRUE,
   recom_freq = "kosambi",
@@ -27,6 +29,13 @@ is the difference between marker 1 and marker 2.  The final value in the vector 
 
 \item{found_hap}{A vector of founder haplotypes, if sample_hap=FALSE the pair of haplotypes for each individual should
 in the same order as in the provided pedigree}
+
+\item{founders_unk}{A vector of founders with no associated haplotypes, these individuals have their haplotypes generated
+during gene-dropping based on allele frequencies}
+
+\item{founders_unk_cohorts}{A scalar which determines the cohorts used to generated haplotypes for individuals in the
+founders_unk vector.  The default is 1 which uses only haplotypes from the same cohort, 2 would use the
+current same cohort along with the previous one and so on.}
 
 \item{to_raw}{logical TRUE or FALSE.  If TRUE the genotypes is stored are raw vectors.  This allows quicker gene-dropping
 and reduces the size of the output.  It must be FALSE if alleles do not all have numeric values between 0 and 255}
