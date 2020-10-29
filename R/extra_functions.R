@@ -56,3 +56,17 @@ find_least_common <- function(values) {
     stop(paste0("Please Check Loci Number ", loci), call. = FALSE)
   }
   return(loci)}
+
+### Check if a value is a vector (and not a list)
+
+.check_if_vector <- function(x){
+  if (!is.list(x) && is.vector(x)){return(TRUE)
+  }else {return(FALSE)}
+}
+
+### Check value is a single and logical
+.check_if_logical <- function(x){
+  if((is.atomic(x) && length(x) == 1L &&
+      is.logical(x))){return(TRUE)
+  }else {return(FALSE)}
+}

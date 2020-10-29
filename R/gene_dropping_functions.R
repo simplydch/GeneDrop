@@ -436,13 +436,17 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
       foc_cohort <- cohorts[n]
       samp_cohorts <- foc_cohort:(foc_cohort + 1 - founders_unk_cohorts)
-      if (any(samp_cohorts < cohort_min)){
+      if (any(samp_cohorts < cohort_min)){cat('\n')
         stop('founders_unk_cohorts range is too large, trying to sample from cohorts not in pedigree')
       }
       foc_cohort_refs <- which(pedigree[,'Cohort'] %in% samp_cohorts)
 
       # remove sampled founders
       foc_cohort_refs <- foc_cohort_refs[!foc_cohort_refs %in% gd_samp_found]
+      if (!length(foc_cohort_refs) > 0){cat('\n')
+        stop(paste0("An individual in founders_unk is in cohort ", foc_cohort, " but there are no known genotypes in the cohort to ",
+                    "sample form"),call. = FALSE)
+      }
       foc_cohort_refs <- c(foc_cohort_refs * 2 -1, foc_cohort_refs * 2)
       sam_hap <- apply(do.call(rbind,gd_hap[foc_cohort_refs]),2,function(x) sample(x,2))
 

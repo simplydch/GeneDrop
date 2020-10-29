@@ -10,6 +10,8 @@ complete_ped_links(
   founders_unk = FALSE,
   rep_years_sire = c(2, 10),
   rep_years_dam = c(2, 10),
+  limit_cohort_low = TRUE,
+  add_dummy_parents = FALSE,
   cohorts = NULL
 )
 }
@@ -27,13 +29,24 @@ active and the second value the time a male is no longer reproductively active. 
 \item{rep_years_dam}{vector. A vector of length 2, the first value is the time until a female is reproductively
 active and the second value the time a female is no longer reproductively active. Default: c(2,10)}
 
+\item{limit_cohort_low}{logical. Determines if the lowest possible cohort should be limited to values in the pedigree.
+This value should only affect adding of dummy individuals and might be necessary if their genotypes are to be
+estimated during gene-dropping. Default : TRUE}
+
+\item{add_dummy_parents}{logical or vector of IDs that need dummy parents generated. If FALSE no dummy parents
+will be added. If TRUE all individuals with a single missing parent will have a Dummy parent added. Default: FASLSE}
+
 \item{cohorts}{An optional vector, the same length of the pedigree containing cohort information which can be
 provided if there is not a cohort column in the pedigree}
 }
 \description{
-This fills in missing pedigree links in a random fashion using plausable
+This fills in missing pedigree links in a random fashion using plausible
 individuals. It for individuals with missing sires or dams it selects a
-parent that could have been alive within a suitable time period
+parent that could have been alive within a suitable time period.
+It is also possible to generate dummy parents for individuals, when this
+is done cohorts for the added dummy individuals are randomly assigned based on reproductively
+active years provided.  The minimum value of the cohort assigned is limited to the lowest value in
+the pedigree.
 }
 \examples{
 

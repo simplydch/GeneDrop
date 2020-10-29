@@ -35,10 +35,10 @@ ped_col_present <- function(pedigree, check_column = c()) {
 #' @export
 #' @examples
 #'
-cohort_numeric <- function(cohorts){
-  cohorts <- tryCatch(as.numeric(cohorts), error=function(e) e, warning =function(w) w)
+cohort_numeric <- function(cohorts) {
+  cohorts <- tryCatch(as.numeric(cohorts), error = function(e) e, warning = function(w) w)
 
-  if(is(cohorts, 'warning')){
+  if (is(cohorts, "warning")) {
     stop("Some cohorts can't be interpretted as numeric (or NA), estimation can't proceed")
   }
   cohorts
@@ -202,25 +202,33 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 
 
   # Find id, sire and dam columns
-  poss_sire_names<-c('sire','dad','father')
-  poss_dam_names<-c('mum','mom','dam','mother')
-  sire_col <- grep(paste0(c(poss_sire_names,
-                            paste0(poss_sire_names,'id'),
-                            paste0(poss_sire_names,'_id'),
-                            paste0('id',poss_sire_names),
-                            paste0('id_',poss_sire_names)),
-                          collapse = '|'),
-                   ignore.case = TRUE, colnames(pedigree))
-  dam_col <- grep(paste0(c(poss_dam_names,
-                           paste0(poss_dam_names,'id'),
-                           paste0(poss_dam_names,'_id'),
-                           paste0('id',poss_dam_names),
-                           paste0('id_',poss_dam_names)),
-                         collapse = '|'),
-                  ignore.case = TRUE, colnames(pedigree))
+  poss_sire_names <- c("sire", "dad", "father")
+  poss_dam_names <- c("mum", "mom", "dam", "mother")
+  sire_col <- grep(paste0(c(
+    poss_sire_names,
+    paste0(poss_sire_names, "id"),
+    paste0(poss_sire_names, "_id"),
+    paste0("id", poss_sire_names),
+    paste0("id_", poss_sire_names)
+  ),
+  collapse = "|"
+  ),
+  ignore.case = TRUE, colnames(pedigree)
+  )
+  dam_col <- grep(paste0(c(
+    poss_dam_names,
+    paste0(poss_dam_names, "id"),
+    paste0(poss_dam_names, "_id"),
+    paste0("id", poss_dam_names),
+    paste0("id_", poss_dam_names)
+  ),
+  collapse = "|"
+  ),
+  ignore.case = TRUE, colnames(pedigree)
+  )
   id_col <- grep("id", ignore.case = TRUE, colnames(pedigree))
 
-  #remove possible matches with Sire and Dam columns
+  # remove possible matches with Sire and Dam columns
   id_col <- id_col[!id_col %in% (c(dam_col, sire_col))]
 
   # Check that ID, Sire and Dam columns can be identified
@@ -254,26 +262,27 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   }
 
   # If passed dataframe convert to matrix (faster to work with)
-  if (is.data.frame(pedigree)){
-    pedigree <- do.call(cbind, pedigree)}
+  if (is.data.frame(pedigree)) {
+    pedigree <- do.call(cbind, pedigree)
+  }
 
-  if (any(duplicated(pedigree[,'ID']))) {
-    stop('Some individuals appear more than one in pedigree')
+  if (any(duplicated(pedigree[, "ID"]))) {
+    stop("Some individuals appear more than one in pedigree")
   }
 
   sire_na_0 <- FALSE
   dam_na_0 <- FALSE
-  if (any(is.na(pedigree['Sire']))) {
+  if (any(is.na(pedigree[, "Sire"]))) {
     sire_na_0 <- TRUE
-    pedigree[,'Sire'] <- ifelse(is.na(pedigree[,'Sire']), 0, pedigree[,'Sire'])
+    pedigree[, "Sire"] <- ifelse(is.na(pedigree[, "Sire"]), 0, pedigree[, "Sire"])
   }
 
-  if (any(is.na(pedigree['Dam']))) {
+  if (any(is.na(pedigree[, "Dam"]))) {
     dam_na_0 <- TRUE
-    pedigree[,'Dam'] <- ifelse(is.na(pedigree[,'Dam']), 0, pedigree[,'Dam'])
+    pedigree[, "Dam"] <- ifelse(is.na(pedigree[, "Dam"]), 0, pedigree[, "Dam"])
   }
 
-  if(any(c(dam_na_0, sire_na_0))){
+  if (any(c(dam_na_0, sire_na_0))) {
     cat(paste0("Note: NA values in Sire and Dam columns changed to 0\n"))
   }
 
@@ -331,7 +340,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   pedigree[unique(sire_ref), "Sex"] <- 1
 
   # Print message if any changes have been made i.e dams with male sex code
-  if (any(pedigree[, "Sex"] != sex_codes, na.rm=TRUE)) {
+  if (any(pedigree[, "Sex"] != sex_codes, na.rm = TRUE)) {
     message(paste0("Note: Sex of some individuals have been changed due to parent data"))
   }
 
@@ -344,13 +353,14 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
   # If pedigree is already in correct order return it
   if (!test_order(pedigree)) {
     return(pedigree)
-  }else{
+  } else {
 
     # Otherwise re-order pedigree
 
     order2 <- calc_ped_depth(pedigree)
 
-    return(pedigree[order(order2), ])}
+    return(pedigree[order(order2), ])
+  }
   # data.frame(pedigree)
 }
 
@@ -387,7 +397,7 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 
   ## Convert cohorts to numeric values
 
-  cohorts <-cohort_numeric(pedigree[, "Cohort"])
+  cohorts <- cohort_numeric(pedigree[, "Cohort"])
 
   # Loop until no new cohorts are being estimated
   while (any(is.na(cohorts))) {
@@ -401,7 +411,8 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 
     # Find the cohort of the youngest parent
     earliest_pos_cohort <- ifelse((!is.na(sire_cohort) & sire_cohort >= dam_cohort) | is.na(dam_cohort),
-                                  sire_cohort,dam_cohort)
+      sire_cohort, dam_cohort
+    )
 
 
     cohorts <- sapply(matrix(1:length(cohorts)), function(x) {
@@ -463,9 +474,14 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 
 #' Function to complete pedigree links
 #'
-#' This fills in missing pedigree links in a random fashion using plausable
+#' This fills in missing pedigree links in a random fashion using plausible
 #' individuals. It for individuals with missing sires or dams it selects a
-#' parent that could have been alive within a suitable time period
+#' parent that could have been alive within a suitable time period.
+#' It is also possible to generate dummy parents for individuals, when this
+#' is done cohorts for the added dummy individuals are randomly assigned based on reproductively
+#' active years provided.  The minimum value of the cohort assigned is limited to the lowest value in
+#' the pedigree.
+#'
 #' @param pedigree A data frame or matrix. A pedigree with ID, Sire and Dam, Sex columns
 #' @param founders A vector of founder IDs matching those in the pedigree
 #' @param founders_unk A vector of individuals that are to be treated as founders but which do not have haplotypes
@@ -474,6 +490,11 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 #' active and the second value the time a male is no longer reproductively active. Default: c(2,10)
 #' @param rep_years_dam vector. A vector of length 2, the first value is the time until a female is reproductively
 #' active and the second value the time a female is no longer reproductively active. Default: c(2,10)
+#' @param limit_cohort_low logical. Determines if the lowest possible cohort should be limited to values in the pedigree.
+#' This value should only affect adding of dummy individuals and might be necessary if their genotypes are to be
+#' estimated during gene-dropping. Default : TRUE
+#' @param add_dummy_parents logical or vector of IDs that need dummy parents generated. If FALSE no dummy parents
+#' will be added. If TRUE all individuals with a single missing parent will have a Dummy parent added. Default: FASLSE
 #' @param cohorts An optional vector, the same length of the pedigree containing cohort information which can be
 #' provided if there is not a cohort column in the pedigree
 #' @keywords complete pedigree
@@ -484,8 +505,23 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
                                rep_years_sire = c(2, 10),
                                rep_years_dam = c(2, 10),
+                               limit_cohort_low = TRUE,
+                               add_dummy_parents = FALSE,
                                cohorts = NULL) {
 
+  # Check add_dummy_parents in a vector or logical
+  if ((.check_if_vector(add_dummy_parents) & is.logical(add_dummy_parents)
+  & length(add_dummy_parents) > 1L) | !.check_if_vector(add_dummy_parents)) {
+    stop("add_dummy_parents should be TRUE, FALSE or a vector of IDs")
+  }
+
+  # Check limit_cohort_low is logical
+  if (!.check_if_logical(limit_cohort_low)) {
+    stop("limit_cohort_low should be TRUE or FALSE")
+  }
+
+  # Check if there are dummy individuals to add
+  dummy_parents_to_add <- !(.check_if_logical(add_dummy_parents) && add_dummy_parents == FALSE)
 
   # Check founder_unk is in correct format
   if (is.logical(founders_unk) && founders_unk == TRUE) {
@@ -494,9 +530,9 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
 
   # Combine both types of founders
 
-  if (!is.logical(founders_unk)){
-    founders_all <- c(founders,founders_unk )
-  }else{
+  if (!is.logical(founders_unk)) {
+    founders_all <- c(founders, founders_unk)
+  } else {
     founders_all <- founders
   }
 
@@ -519,7 +555,7 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
     cohorts <- pedigree[, "Cohort"]
   }
 
-  cohorts <-cohort_numeric(pedigree[, "Cohort"])
+  cohorts <- cohort_numeric(pedigree[, "Cohort"])
 
   # convert any NA's in Dam or Sire column to 0's
   pedigree[is.na(pedigree[, "Dam"]), "Dam"] <- 0
@@ -539,11 +575,19 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   new_dam[founder_ref, ] <- 0
 
   # Find max and min possible cohorts of parents based on reproductive ages
+  # Limit lower limit to earliest cohort seen in pedigree if limit_cohort_low is TRUE
+  # This means you won't end up with dummy individuals which can't have
+  # their genotype estimated
+
   range_dam_high <- cohorts - rep_years_dam[1]
-  range_dam_low <- cohorts - rep_years_dam[2]
+  range_dam_low <- ifelse(cohorts - rep_years_dam[2] < min(cohorts) & limit_cohort_low,
+    min(cohorts), cohorts - rep_years_dam[2]
+  )
 
   range_sire_high <- cohorts - rep_years_sire[1]
-  range_sire_low <- cohorts - rep_years_sire[2]
+  range_sire_low <- ifelse(cohorts - rep_years_sire[2] < min(cohorts & limit_cohort_low),
+    min(cohorts), cohorts - rep_years_sire[2]
+  )
 
 
   # Get Sire and Dam row references
@@ -551,70 +595,251 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   sire_ref <- which(pedigree[, "Sex"] == 1)
 
   # Find individuals that need estimated dams and sires (no parent but not founder)
-  dam_to_est <- which(!founder_ref & new_dam == 0)
-  sire_to_est <- which(!founder_ref & new_sire == 0)
+
+  id_no_dam <- which(!founder_ref & new_dam == 0)
+  id_no_sire <- which(!founder_ref & new_sire == 0)
+
+  # Find individuals that only need a single parent estimated
+
+  dam_sing_par <- id_no_dam[!id_no_dam %in% id_no_sire]
+  sire_sing_par <- id_no_sire[!id_no_sire %in% id_no_dam]
+
+
+  ## set-up warning message to check for creation of dummies for both parents
+  both_parent_warn <- FALSE
+
+
+  # Create vector of id row references that need a dummy dam
+  # if there are no dummy parents to add this is an empty vector
+  # if add_dummt_parents is TRUE this is all individuals that are
+  # missing only a dam.  If it is a vector these are used if possble.
+
+  dam_to_dummy <- if (dummy_parents_to_add == FALSE) {
+    c()
+  } else if (.check_if_logical(add_dummy_parents) && add_dummy_parents == TRUE) {
+    dam_sing_par
+  } else if (any(is.na(match(add_dummy_parents, pedigree[, "ID"])))) {
+    stop("Some IDs given to add_dummy_parents are not in pedigree")
+  } else {
+    dummy_ids_tmp_dam <- which(pedigree[, "ID"] %in% add_dummy_parents & pedigree[, "Dam"] == 0)
+    if (any(is.na(match(dummy_ids_tmp_dam, dam_sing_par)))) {
+      both_parent_warn <- TRUE
+    }
+    dummy_ids_tmp_dam
+  }
+
+  # Create vector of id row references that need a dummy sire
+  # if there are no dummy parents to add this is an empty vector
+  # if add_dummt_parents is TRUE this is all individuals that are
+  # missing only a sire.  If it is a vector these are used if possble.
+
+  sire_to_dummy <- if (dummy_parents_to_add == FALSE) {
+    c()
+  } else if (.check_if_logical(add_dummy_parents) && add_dummy_parents == TRUE) {
+    sire_sing_par
+  } else if (any(is.na(match(add_dummy_parents, pedigree[, "ID"])))) {
+    stop("Some IDs given to add_dummy_parents are not in pedigree")
+  } else {
+    dummy_ids_tmp_sire <- which(pedigree[, "ID"] %in% add_dummy_parents & pedigree[, "Sire"] == 0)
+    if (any(is.na(match(dummy_ids_tmp_sire, sire_sing_par)))) {
+      both_parent_warn <- TRUE
+    }
+    dummy_ids_tmp_sire
+  }
+
+  # Get a list of all unique ID references that are to have dummy parents assigned
+  all_dummy_parents <- unique(c(dam_to_dummy, sire_to_dummy))
+
+  # Check ID's needing dummy parents are not founders
+
+  if (any(all_dummy_parents %in% which(founder_ref))) {
+    stop("IDs appear in both founder and add_dummy_parent list", call. = FALSE)
+  }
+
+  # Produce both parent warning if required
+
+  if (both_parent_warn) {
+    message(
+      "Warning: Some individuals in add_dummy_parents are missing ",
+      "both parents, was this intentional?"
+    )
+  }
+
+
+  # Check if all dummy parents requested can be generated
+
+  if (!.check_if_logical(add_dummy_parents) &&
+    (!any(add_dummy_parents %in% c(id_no_dam, id_no_sire)))) {
+    message(
+      "Warning: Some individuals in add_dummy_parents are not missing ",
+      "either parent and can't be given a dummy parent"
+    )
+  }
+
+  # Check if any dummy parents are being generated
+
+  if (dummy_parents_to_add & length(all_dummy_parents) == 0) {
+    message(
+      "Warning: add_dummy_parent is not FALSE but no dummy individuals ",
+      "were necessary"
+    )
+  }
+
+  # Find dams and sires that required estimated pedigree links
+
+  dam_to_est <- id_no_dam[!id_no_dam %in% dam_to_dummy]
+  sire_to_est <- id_no_sire[!id_no_sire %in% sire_to_dummy]
+
+
 
   # Assign a random dam born within calculated window to those without known parent
-  new_dam[dam_to_est, ] <- sapply(matrix(dam_to_est), function(x) {
-    t <- which(cohorts >= range_dam_low[x] & cohorts <= range_dam_high[x])
-    t2 <- t[t %in% dam_ref]
-    if (length(t2)<1) {
-      stop(paste0("No possible dams in pedigree for some individuals marked as non-founders. ",
-                  "Are rep_years_dam correct?"), call.=FALSE)
-    }
-    pedigree[t2[sample.int(length(t2), 1)], c("ID")]
-  })
+
+  if (length(dam_to_est) > 0) {
+    new_dam[dam_to_est, ] <- sapply(matrix(dam_to_est), function(x) {
+      t <- which(cohorts >= range_dam_low[x] & cohorts <= range_dam_high[x])
+      t2 <- t[t %in% dam_ref]
+      if (length(t2) < 1) {
+        stop(paste0(
+          "No possible dams in pedigree for some individuals marked as non-founders. ",
+          "Are rep_years_dam correct?"
+        ), call. = FALSE)
+      }
+      pedigree[t2[sample.int(length(t2), 1)], c("ID")]
+    })
+  }
 
   # Assign a random sire born within calculated window to those without known parent
-  new_sire[sire_to_est, ] <- sapply(matrix(sire_to_est), function(x) {
-    t <- which(cohorts >= range_sire_low[x] & cohorts <= range_sire_high[x])
-    t2 <- t[t %in% sire_ref]
-    if (length(t2)<1) {
-      stop(paste0("No possible sires in pedigree for some individuals marked as non-founders. ",
-                  "Are rep_years_sire correct?"), call.=FALSE)
+
+  if (length(sire_to_est) > 0) {
+    new_sire[sire_to_est, ] <- sapply(matrix(sire_to_est), function(x) {
+      t <- which(cohorts >= range_sire_low[x] & cohorts <= range_sire_high[x])
+      t2 <- t[t %in% sire_ref]
+      if (length(t2) < 1) {
+        stop(paste0(
+          "No possible sires in pedigree for some individuals marked as non-founders. ",
+          "Are rep_years_sire correct?"
+        ), call. = FALSE)
+      }
+      pedigree[t2[sample.int(length(t2), 1)], c("ID")]
+    })
+  }
+
+  # Calcuate the number of dummy individuals to be added
+
+  num_dam_to_dummy <- length(dam_to_dummy)
+  num_sire_to_dummy <- length(sire_to_dummy)
+
+  # Calculate ID values and randomly assigned, possible cohort, for any dummy individuals
+  # then combine into a pedigree matrix
+
+  if (dummy_parents_to_add & length(all_dummy_parents) > 0) {
+    dummy_ids_dam <- c()
+    dummy_ids_sire <- c()
+    cohort_dum_sire <- c()
+    cohort_dum_dam <- c()
+
+    if (num_dam_to_dummy > 0) {
+      dummy_ids_dam <- paste0("Dummy_", 1:num_dam_to_dummy)
+      new_dam[dam_to_dummy, ] <- dummy_ids_dam
+      cohort_dum_dam <- sapply(matrix(dam_to_dummy), function(x) {
+        sample(range_dam_low[x]:range_dam_high[x], 1)
+      })
     }
-    pedigree[t2[sample.int(length(t2), 1)], c("ID")]
-  })
+    if (num_sire_to_dummy > 0) {
+      dummy_ids_sire <- paste0("Dummy_", (num_dam_to_dummy + 1):(num_sire_to_dummy + num_dam_to_dummy))
+      new_sire[sire_to_dummy, ] <- dummy_ids_sire
+      cohort_dum_sire <- sapply(matrix(sire_to_dummy), function(x) {
+        sample(range_sire_low[x]:range_sire_high[x], 1)
+      })
+    }
+
+    dummy_ped <- cbind(
+      ID = c(dummy_ids_dam, dummy_ids_sire), Sire = 0, Dam = 0,
+      Sex = c(rep(2, num_dam_to_dummy), rep(1, num_sire_to_dummy)),
+      Cohort = c(cohort_dum_dam, cohort_dum_sire)
+    )
+  }
+
 
   # return pedigree in expected format
+
   pedigree <- matrix(c(pedigree[, "ID"], new_sire, new_dam, pedigree[, "Sex"], pedigree[, "Cohort"]),
-                     ncol = 5,
-                     dimnames = (list(NULL, c("ID", "Sire", "Dam", "Sex", "Cohort")))
+    ncol = 5,
+    dimnames = (list(NULL, c("ID", "Sire", "Dam", "Sex", "Cohort")))
   )
+
+  # add new dummy individuals to pedigree if necessary
+
+  if (dummy_parents_to_add & length(all_dummy_parents) > 0) {
+    pedigree <- rbind(dummy_ped, pedigree)
+  }
 
   ## Ensure pedigree is in correct order etc
   pedigree_out <- fix_pedigree(pedigree)
 
-  pedigree_out <- pedigree_out[order(pedigree_out[,'Cohort']),]
+  pedigree_out <- pedigree_out[order(pedigree_out[, "Cohort"]), ]
 
   ## Find references of all founders
   found_in_ped <- which(pedigree_out[, "Sire"] == 0 & pedigree_out[, "Dam"] == 0)
 
   ## Check number of founders in final pedigree is correct
-  if (length(found_in_ped) != length(founders_all)){
-    stop(paste0("Number of founders in returned pedigree (", length(found_in_ped),
-                ") is not equal to the number of founders provided (", length(founders_all),")"))
-
+  if (dummy_parents_to_add == FALSE & length(found_in_ped) != length(founders_all)) {
+    stop(paste0(
+      "Number of founders in returned pedigree (", length(found_in_ped),
+      ") is not equal to the number of founders provided (", length(founders_all), ")"
+    ))
   }
 
-  # Get cohorts for each founder with unknown haplotypes
+  # Create vector of dummy individuals, empty if none
 
-  if (!is.logical(founders_unk)){
-    samp_cohorts <- pedigree_out[match(founders_unk, pedigree_out[,'ID']),'Cohort']
+  if (dummy_parents_to_add & length(all_dummy_parents) > 0) {
+    dum_ind <- c(dummy_ids_dam, dummy_ids_sire)
+  } else {
+    dum_ind <- c()
+  }
+
+  # Create vector of founders_unk individuals, empty if none
+
+  if (!is.logical(founders_unk)) {
+    unk_ind <- founders_unk
+  } else {
+    unk_ind <- c()
+  }
+
+  # Get all individuals that might need repositioned in pedigree
+
+  to_move <- c(dum_ind, unk_ind)
+
+  # If there are individuals that need moved place them at the end of their cohort
+
+  if (length(to_move > 0)) {
+    # Get cohorts for each founder with unknown haplotypes
+    samp_cohorts <- pedigree_out[match(to_move, pedigree_out[, "ID"]), "Cohort"]
+    unq_samp_cohorts <- unique(samp_cohorts)
+
 
     #  Place founder individuals with unknown haplotypes after all other individuals
     # In their cohort
-    for (y in samp_cohorts){
-      all_cohorts <- which(pedigree_out[,'Cohort'] == y)
-      samp_refs <- match(founders_unk[which(samp_cohorts == y)],pedigree_out[,'ID'])
+    for (y in unq_samp_cohorts) {
+      all_cohorts <- which(pedigree_out[, "Cohort"] == y)
+      samp_refs <- match(to_move[which(samp_cohorts == y)], pedigree_out[, "ID"])
       new_order <- c(all_cohorts[!all_cohorts %in% samp_refs], samp_refs)
-      pedigree_out[all_cohorts,] <- pedigree_out[new_order,]
-    }}
+      pedigree_out[all_cohorts, ] <- pedigree_out[new_order, ]
+    }
+  }
 
   # Sort founders so they are in same order as that provided
-  ped_known_found <- which(pedigree_out[,'ID'] %in% founders)
-  ped_founders <- pedigree_out[match(founders, pedigree_out[,'ID']),]
-  pedigree_out[ped_known_found,] <- ped_founders
+  ped_known_found <- which(pedigree_out[, "ID"] %in% founders)
+  ped_founders <- pedigree_out[match(founders, pedigree_out[, "ID"]), ]
+  pedigree_out[ped_known_found, ] <- ped_founders
+
+  # Warn if dummy individuals have been added
+  if (dummy_parents_to_add & length(all_dummy_parents) > 0) {
+    message(
+      "Dummy individuals have been added to pedigree in the ",
+      "format 'Dummy_00'. Make sure these are added to the founders provided to genedrop"
+    )
+  }
 
   return(pedigree_out)
 }
