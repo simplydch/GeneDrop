@@ -19,13 +19,13 @@
 #' @examples
 #'
 gene_drop_object <- setClass("gene_drop_object",
-                             slots = c(
-                               genotype_matrix = "list",
-                               haplotype_info = "list",
-                               pedigree = "matrix",
-                               map_info = "matrix",
-                               model_info = "list"
-                             )
+  slots = c(
+    genotype_matrix = "list",
+    haplotype_info = "list",
+    pedigree = "matrix",
+    map_info = "matrix",
+    model_info = "list"
+  )
 )
 
 
@@ -37,14 +37,15 @@ setMethod(
   c("gene_drop_object"),
   function(object) {
     cat("A gene_drop_object containing:\n")
-    num_loci <- ifelse (length(get_genotype_matrix(object)) > 0, length(get_genotype_matrix(object)[[1]]),0)
+    num_loci <- ifelse(length(get_genotype_matrix(object)) > 0, length(get_genotype_matrix(object)[[1]]), 0)
 
     cat("@genotype_matrix - A genotype matrix with", num_loci, "loci\n")
     cat("@haplotype_info - A list containing haplotype information for tracing alleles\n")
     cat("@pedigree - A pedigree containing", nrow(get_pedigree(object)), "individuals\n")
     cat("@map_info - A matrix containing mapping and recombination frequency information\n")
     cat("@model_info - A list containing the variable passed to the function\n")
-  })
+  }
+)
 
 
 
@@ -149,17 +150,26 @@ setMethod(
   c("gene_drop_object"),
   function(gene_drop_object, ids = "ALL", loci = "ALL") {
     if ((length(ids) == 1 && ids == "ALL") & (length(loci) == 1 && loci == "ALL")) {
-      if(slot(gene_drop_object, "model_info")['to_raw']==TRUE){
-        return(matrix(as.numeric(do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
-                      nrow =length(slot(gene_drop_object, "genotype_matrix"))))}
-      else{
-        return(matrix((do.call(rbind,slot(gene_drop_object, "genotype_matrix"))),
-                      nrow =length(slot(gene_drop_object, "genotype_matrix"))))}
-
+      if (slot(gene_drop_object, "model_info")["to_raw"] == TRUE) {
+        return(matrix(as.numeric(do.call(rbind, slot(gene_drop_object, "genotype_matrix"))),
+          nrow = length(slot(gene_drop_object, "genotype_matrix"))
+        ))
+      }
+      else {
+        return(matrix((do.call(rbind, slot(gene_drop_object, "genotype_matrix"))),
+          nrow = length(slot(gene_drop_object, "genotype_matrix"))
+        ))
+      }
     } else {
-      if (length(ids) == 1 && ids == "ALL"){ids = get_pedigree(gene_drop_object)[,'ID']}
-      if (length(loci) == 1 && loci == "ALL"){loci = c(1:length(slot(gene_drop_object, "genotype_matrix")[[1]]))}
-      else{loci<-sapply(loci,function(x).check_loci(x, gene_drop_object))} # TODO change this to be more efficient
+      if (length(ids) == 1 && ids == "ALL") {
+        ids <- get_pedigree(gene_drop_object)[, "ID"]
+      }
+      if (length(loci) == 1 && loci == "ALL") {
+        loci <- c(1:length(slot(gene_drop_object, "genotype_matrix")[[1]]))
+      }
+      else {
+        loci <- sapply(loci, function(x) .check_loci(x, gene_drop_object))
+      } # TODO change this to be more efficient
 
       id_list <- id_ref(gene_drop_object, ids)
       if (any(is.na(id_list))) {
@@ -170,11 +180,14 @@ setMethod(
       id_names <- paste0("ID_", ids)
       loci_names <- paste0("L_", rep(loci, each = 2), "_", rep(c("01", "02"), length(loci)))
 
-      mat_out <-matrix(sapply(get_genotype_matrix(gene_drop_object)[refs],'[',loci), byrow = TRUE,
-                       nrow=length(refs))
-      if(slot(gene_drop_object, "model_info")['to_raw']==TRUE){
-        return(matrix((as.numeric(mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))}
-      else{
+      mat_out <- matrix(sapply(get_genotype_matrix(gene_drop_object)[refs], "[", loci),
+        byrow = TRUE,
+        nrow = length(refs)
+      )
+      if (slot(gene_drop_object, "model_info")["to_raw"] == TRUE) {
+        return(matrix((as.numeric(mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))
+      }
+      else {
         return(matrix(((mat_out)), nrow = length(id_list), dimnames = list(id_names, loci_names)))
       }
     }
@@ -263,16 +276,23 @@ reduce_hap_code <- function(sire_hap_info, dam_hap_info) {
 #' @examples
 #'
 genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk = FALSE, founders_unk_cohorts = 1,
-                     to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi", progress=TRUE) {
+                     to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi", progress = TRUE) {
+
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
 
   # Check founder_sample
   if (is.logical(founders_unk) && founders_unk == TRUE) {
     stop("founders_unk should be FALSE or a vector")
+  } else {
+    founders_unk <- c(matrix(founders_unk))
   }
 
   # Check founder_unk_cohort
 
-  if (!(length(founders_unk_cohorts)==1 && is.numeric(founders_unk_cohorts) && founders_unk_cohorts > 0)){
+  if (!(length(founders_unk_cohorts) == 1 && is.numeric(founders_unk_cohorts) && founders_unk_cohorts > 0)) {
     stop("founders_unk_cohorts is not a single numeric value greater than 0")
   }
 
@@ -281,25 +301,35 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
   ped_col_present(pedigree)
 
   # Make sure ID's aren't present multiple times
-  if (any(duplicated(pedigree[,'ID']))) {
-    stop('Some individuals appear more than one in pedigree')
+  if (any(duplicated(pedigree[, "ID"]))) {
+    stop("Some individuals appear more than one in pedigree")
   }
 
   ### Get model info
 
-  model_info <-list()
-  model_info['model_arguments'] <-list(sys.call())
-  model_info<-c(model_info,as.list(environment())[6:11])
+  model_info <- list()
+  model_info["model_arguments"] <- list(sys.call())
+  model_info <- c(model_info, as.list(environment())[6:11])
 
-  gene_drop_out <- new("gene_drop_object", pedigree = pedigree,
-                       model_info = model_info)
+  gene_drop_out <- new("gene_drop_object",
+    pedigree = pedigree,
+    model_info = model_info
+  )
 
   if (is.logical(to_raw) & to_raw == FALSE) {
-    convert_to_raw <- function(x) {x}
-    convert_from_raw <- function(x){x}
+    convert_to_raw <- function(x) {
+      x
+    }
+    convert_from_raw <- function(x) {
+      x
+    }
   } else if (is.logical(to_raw) & to_raw == TRUE) {
-    convert_to_raw <- function(x) {as.raw(x)}
-    convert_from_raw <- function(x){as.numeric(x)}
+    convert_to_raw <- function(x) {
+      as.raw(x)
+    }
+    convert_from_raw <- function(x) {
+      as.numeric(x)
+    }
   } else {
     stop("to_raw should be TRUE or FALSE")
   }
@@ -311,7 +341,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
   # Deal with a vector being passed and convert to matrix
 
-  if (!(is.matrix(found_hap) | is.data.frame(found_hap))){
+  if (!(is.matrix(found_hap) | is.data.frame(found_hap))) {
     found_hap <- matrix(found_hap, nrow = length(found_hap))
   }
 
@@ -323,7 +353,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
   }
 
   if (to_raw == TRUE && any(!is.numeric(found_hap)) && any(found_hap < 0 | found_hap > 255)) {
-    stop("to_raw is TRUE but found_hap contains values that are not between 0 and 255", call.=FALSE)
+    stop("to_raw is TRUE but found_hap contains values that are not between 0 and 255", call. = FALSE)
   }
 
   ### Check map_dist
@@ -337,6 +367,8 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
   if (!is.null(map_dist) & length(map_dist) != loci_num) {
     stop(paste0("map_dist is not the same length as the genotype (", loci_num, ")"))
+  } else {
+    map_dist <- c(matrix(map_dist))
   }
 
 
@@ -365,20 +397,19 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
   ### Get references for founders without associated haplotypes
 
-  if (!is.logical(founders_unk)){
+  if (!is.logical(founders_unk)) {
     gd_samp_found <- match(founders_unk, pedigree[, "ID"])
     gd_founders <- gd_founders[!gd_founders %in% gd_samp_found]
     gd_nonfounders_all <- sort(c(gd_nonfounders, gd_samp_found))
 
     # Get cohort info
-    cohorts <- cohort_numeric(pedigree[ ,'Cohort'])
+    cohorts <- cohort_numeric(pedigree[, "Cohort"])
     cohort_min <- min(cohorts)
 
-    if (any(pedigree[gd_samp_found, c('Sire','Dam')] !=0)){
+    if (any(pedigree[gd_samp_found, c("Sire", "Dam")] != 0)) {
       stop("Some individuals provided in founders_unk are not set as founders in pedigree")
     }
-
-  }else{
+  } else {
     gd_nonfounders_all <- gd_nonfounders
   }
 
@@ -386,7 +417,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
   ### correct founders
 
   if (is.logical(sample_hap) && sample_hap == TRUE) {
-    found_samp <- found_hap[sample(nrow(found_hap), length(gd_founders) * 2, replace = TRUE),, drop = FALSE ]
+    found_samp <- found_hap[sample(nrow(found_hap), length(gd_founders) * 2, replace = TRUE), , drop = FALSE]
   } else if (is.logical(sample_hap) && sample_hap == FALSE) {
     if (nrow(found_hap) != length(gd_founders) * 2) {
       stop(paste0(
@@ -396,7 +427,7 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
     }
     found_samp <- found_hap
   } else {
-    stop(paste0("sample_hap argument should be TRUE or FALSE"),call. = FALSE)
+    stop(paste0("sample_hap argument should be TRUE or FALSE"), call. = FALSE)
   }
 
   ### Set up matrix for haplotypes
@@ -408,9 +439,11 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
 
   ### Store mapping information
 
-  map_info <- cbind(Chromosome = rep(1:length(chr_loci_num), chr_loci_num),
-                    cMDiff = map_dist,
-                    recom_freq = recom_freq_vec)
+  map_info <- cbind(
+    Chromosome = rep(1:length(chr_loci_num), chr_loci_num),
+    cMDiff = map_dist,
+    recom_freq = recom_freq_vec
+  )
 
   ### Set Recombination frequencies between chromosomes as 0.5
   recom_freq_vec <- c(0.5, recom_freq_vec[1:length(recom_freq_vec) - 1])
@@ -421,37 +454,41 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
   hap_code_list <- rep(list(list()), length(gd_nonfounders) * 2)
 
   # Basic Progress Bar
-  if (progress == TRUE){
+  if (progress == TRUE) {
     cat("Gene-dropping to", length(gd_nonfounders), "individuals:\n")
-    split_50 <- floor(length(gd_nonfounders)/50)
-    cat('0%|',paste0(rep('-',50)),'|100%','\n', sep='')
-    cat('  |')}
+    split_50 <- floor(length(gd_nonfounders) / 50)
+    cat("0%|", paste0(rep("-", 50)), "|100%", "\n", sep = "")
+    cat("  |")
+  }
   ### Establish genotype for each non-founder individual
   for (ind in 1:length(gd_nonfounders_all)) {
-
     n <- gd_nonfounders_all[ind]
 
-    if (!is.logical(founders_unk) && n %in% gd_samp_found){
+    if (!is.logical(founders_unk) && n %in% gd_samp_found) {
       # get cohort
 
       foc_cohort <- cohorts[n]
       samp_cohorts <- foc_cohort:(foc_cohort + 1 - founders_unk_cohorts)
-      if (any(samp_cohorts < cohort_min)){cat('\n')
-        stop('founders_unk_cohorts range is too large, trying to sample from cohorts not in pedigree')
+      if (any(samp_cohorts < cohort_min)) {
+        cat("\n")
+        stop("founders_unk_cohorts range is too large, trying to sample from cohorts not in pedigree")
       }
-      foc_cohort_refs <- which(pedigree[,'Cohort'] %in% samp_cohorts)
+      foc_cohort_refs <- which(pedigree[, "Cohort"] %in% samp_cohorts)
 
       # remove sampled founders
       foc_cohort_refs <- foc_cohort_refs[!foc_cohort_refs %in% gd_samp_found]
-      if (!length(foc_cohort_refs) > 0){cat('\n')
-        stop(paste0("An individual in founders_unk is in cohort ", foc_cohort, " but there are no known genotypes in the cohort to ",
-                    "sample form"),call. = FALSE)
+      if (!length(foc_cohort_refs) > 0) {
+        cat("\n")
+        stop(paste0(
+          "An individual in founders_unk is in cohort ", foc_cohort, " but there are no known genotypes in the cohort to ",
+          "sample form"
+        ), call. = FALSE)
       }
-      foc_cohort_refs <- c(foc_cohort_refs * 2 -1, foc_cohort_refs * 2)
-      sam_hap <- apply(do.call(rbind,gd_hap[foc_cohort_refs]),2,function(x) sample(x,2))
+      foc_cohort_refs <- c(foc_cohort_refs * 2 - 1, foc_cohort_refs * 2)
+      sam_hap <- apply(do.call(rbind, gd_hap[foc_cohort_refs]), 2, function(x) sample(x, 2))
 
-      x_sire_hap<-sam_hap[1,]
-      x_dam_hap<-sam_hap[2,]
+      x_sire_hap <- sam_hap[1, ]
+      x_dam_hap <- sam_hap[2, ]
 
       gd_hap[[n * 2 - 1]] <- convert_to_raw(x_sire_hap)
       gd_hap[[n * 2]] <- convert_to_raw(x_dam_hap)
@@ -459,20 +496,22 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
       hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- NA
 
 
-      if (progress == TRUE && ind %% split_50 == 0){
-        cat('-')}
-
-    } else{
+      if (progress == TRUE && ind %% split_50 == 0) {
+        cat("-")
+      }
+    } else {
 
 
       ### get sire and dam info for focal individual
       x_sire <- c(sire_ref[n] * 2 - 1, sire_ref[n] * 2)
-      if (any(x_sire<1)){cat('\n')
-        stop("Sire missing, individuals are present with a single missing parent",call. = FALSE)
+      if (any(x_sire < 1)) {
+        cat("\n")
+        stop("Sire missing, individuals are present with a single missing parent", call. = FALSE)
       }
       x_dam <- c(dam_ref[n] * 2 - 1, dam_ref[n] * 2)
-      if (any(x_dam<1)){cat('\n')
-        stop("Dam missing, individuals are present with a single missing parent",call. = FALSE)
+      if (any(x_dam < 1)) {
+        cat("\n")
+        stop("Dam missing, individuals are present with a single missing parent", call. = FALSE)
       }
 
       ### Establish where recombination events will occur
@@ -499,11 +538,14 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
       ### Write haplotype codes to list (for tracing)
       hap_code_list[c(c(ind, ind) + c(ind - 1, ind))] <- reduce_hap_code(hap1_code, hap2_code)
 
-      if (progress == TRUE && ind %% split_50 == 0){
-        cat('-')}
-    }}
-  if (progress == TRUE){
-    cat('|\n')}
+      if (progress == TRUE && ind %% split_50 == 0) {
+        cat("-")
+      }
+    }
+  }
+  if (progress == TRUE) {
+    cat("|\n")
+  }
   slot(gene_drop_out, "haplotype_info") <- hap_code_list
   slot(gene_drop_out, "genotype_matrix") <- gd_hap
   slot(gene_drop_out, "map_info") <- map_info

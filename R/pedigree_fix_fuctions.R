@@ -56,6 +56,10 @@ cohort_numeric <- function(cohorts) {
 #' @examples
 #'
 test_order <- function(pedigree) {
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
   any(match(pedigree[, c("Sire")], pedigree[, c("ID")]) > match(pedigree[, c("ID")], pedigree[, c("ID")]), na.rm = T) ||
     any(match(pedigree[, c("Dam")], pedigree[, c("ID")]) > match(pedigree[, c("ID")], pedigree[, c("ID")]), na.rm = T)
 }
@@ -73,6 +77,12 @@ test_order <- function(pedigree) {
 #' @examples
 #'
 add_missing_parents <- function(pedigree, sex = TRUE, cohort = TRUE) {
+
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
+
   names_keep <- c("ID", "Sire", "Dam", "Sex", "Cohort")
   ### Find any sire IDs that appear as parents but not in ID column
   # Ignore 0's which indicate founders
@@ -125,6 +135,10 @@ add_missing_parents <- function(pedigree, sex = TRUE, cohort = TRUE) {
 #' @examples
 #'
 calc_ped_depth <- function(pedigree) {
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
   ped_col_present(pedigree) # check correct columns are present
   sire_ref <- match(pedigree[, "Sire"], pedigree[, "ID"], nomatch = 0)
   dam_ref <- match(pedigree[, "Dam"], pedigree[, "ID"], nomatch = 0)
@@ -188,6 +202,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
     }
   } else {
     sex_col <- NULL
+    sex <- c(matrix(sex))
   }
 
   # Check that cohort column exists in pedigree if Cohort is set to TRUE
@@ -198,6 +213,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
     }
   } else {
     cohort_col <- NULL
+    cohort <- c(matrix(cohort))
   }
 
 
@@ -263,7 +279,7 @@ fix_pedigree <- function(pedigree, sex = TRUE, cohort = TRUE) {
 
   # If passed dataframe convert to matrix (faster to work with)
   if (is.data.frame(pedigree)) {
-    pedigree <- do.call(cbind, pedigree)
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
   }
 
   if (any(duplicated(pedigree[, "ID"]))) {
@@ -386,6 +402,11 @@ est_cohort <- function(pedigree, tt_rep = 2) {
 
   # TODO Add separate time to reproduction for males and females?
   #     Will this make the function less general?
+
+  # Convert pedigree to matrix if necessary
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
 
   # Check columns are present
   ped_col_present(pedigree, c("Cohort"))
@@ -528,12 +549,23 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
     stop("founders_unk should be FALSE or a vector")
   }
 
+  # deal with factor being passed
+
+  founders_unk <- c(matrix(founders_unk))
+  founders <- c(matrix(founders))
+  add_dummy_parents <- c(matrix(add_dummy_parents))
+
   # Combine both types of founders
 
   if (!is.logical(founders_unk)) {
     founders_all <- c(founders, founders_unk)
   } else {
     founders_all <- founders
+  }
+
+  # Convert pedigree to matrix if necessary
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
   }
 
   # Check columns are present
@@ -553,6 +585,8 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   if (is.null(cohorts)) {
     ped_col_present(pedigree, c("Sex", "Cohort"))
     cohorts <- pedigree[, "Cohort"]
+  } else {
+    cohorts <- c(matrix(cohorts))
   }
 
   cohorts <- cohort_numeric(pedigree[, "Cohort"])
@@ -580,12 +614,14 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   # their genotype estimated
 
   range_dam_high <- cohorts - rep_years_dam[1]
+
+
   range_dam_low <- ifelse(cohorts - rep_years_dam[2] < min(cohorts) & limit_cohort_low,
     min(cohorts), cohorts - rep_years_dam[2]
   )
 
   range_sire_high <- cohorts - rep_years_sire[1]
-  range_sire_low <- ifelse(cohorts - rep_years_sire[2] < min(cohorts & limit_cohort_low),
+  range_sire_low <- ifelse(cohorts - rep_years_sire[2] < min(cohorts) & limit_cohort_low,
     min(cohorts), cohorts - rep_years_sire[2]
   )
 
@@ -659,6 +695,7 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   # Produce both parent warning if required
 
   if (both_parent_warn) {
+    cat("\n")
     message(
       "Warning: Some individuals in add_dummy_parents are missing ",
       "both parents, was this intentional?"
@@ -670,6 +707,7 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
 
   if (!.check_if_logical(add_dummy_parents) &&
     (!any(add_dummy_parents %in% c(id_no_dam, id_no_sire)))) {
+    cat("\n")
     message(
       "Warning: Some individuals in add_dummy_parents are not missing ",
       "either parent and can't be given a dummy parent"
@@ -679,6 +717,7 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   # Check if any dummy parents are being generated
 
   if (dummy_parents_to_add & length(all_dummy_parents) == 0) {
+    cat("\n")
     message(
       "Warning: add_dummy_parent is not FALSE but no dummy individuals ",
       "were necessary"
@@ -737,21 +776,39 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
     dummy_ids_sire <- c()
     cohort_dum_sire <- c()
     cohort_dum_dam <- c()
-
+    dummy_parent_warn <- FALSE
     if (num_dam_to_dummy > 0) {
       dummy_ids_dam <- paste0("Dummy_", 1:num_dam_to_dummy)
       new_dam[dam_to_dummy, ] <- dummy_ids_dam
+      if (any(range_dam_high[dam_to_dummy] < min(cohorts))) {
+        dummy_parent_warn <- TRUE
+        range_dam_high[dam_to_dummy] <- min(cohorts)
+      }
       cohort_dum_dam <- sapply(matrix(dam_to_dummy), function(x) {
-        sample(range_dam_low[x]:range_dam_high[x], 1)
+        year_range <- c(range_dam_low[x]:range_dam_high[x])
+        year_range[sample(length(year_range), 1)]
       })
     }
     if (num_sire_to_dummy > 0) {
       dummy_ids_sire <- paste0("Dummy_", (num_dam_to_dummy + 1):(num_sire_to_dummy + num_dam_to_dummy))
       new_sire[sire_to_dummy, ] <- dummy_ids_sire
+      if (any(range_sire_high[sire_to_dummy] < min(cohorts))) {
+        dummy_parent_warn <- TRUE
+        range_sire_high[sire_to_dummy] <- min(cohorts)
+      }
       cohort_dum_sire <- sapply(matrix(sire_to_dummy), function(x) {
-        sample(range_sire_low[x]:range_sire_high[x], 1)
+        year_range <- c(range_sire_low[x]:range_sire_high[x])
+        year_range[sample(length(year_range), 1)]
       })
     }
+    if (dummy_parent_warn) {
+      cat("\n")
+      message(paste0(
+        "Warning: Dummy parents requested for individuals near the top of the pedigree have been assigned cohort ", min(cohorts),
+        ". They can not be assigned a cohort using the provided reproductivly active years when limit_cohort_low is TRUE"
+      ))
+    }
+
 
     dummy_ped <- cbind(
       ID = c(dummy_ids_dam, dummy_ids_sire), Sire = 0, Dam = 0,
@@ -835,8 +892,9 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
 
   # Warn if dummy individuals have been added
   if (dummy_parents_to_add & length(all_dummy_parents) > 0) {
+    cat("\n")
     message(
-      "Dummy individuals have been added to pedigree in the ",
+      "Warning: Dummy individuals have been added to pedigree in the ",
       "format 'Dummy_00'. Make sure these are added to the founders provided to genedrop"
     )
   }
