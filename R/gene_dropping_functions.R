@@ -283,6 +283,11 @@ genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk =
     pedigree <- matrix(unlist(pedigree), ncol = ncol(pedigree), dimnames = list(NULL, names(pedigree)))
   }
 
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol=ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
+
   # Check founder_sample
   if (is.logical(founders_unk) && founders_unk == TRUE) {
     stop("founders_unk should be FALSE or a vector")
