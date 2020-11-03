@@ -585,7 +585,7 @@ complete_ped_links <- function(pedigree, founders, founders_unk = FALSE,
   )
 
   range_sire_high <- cohorts - rep_years_sire[1]
-  range_sire_low <- ifelse(cohorts - rep_years_sire[2] < min(cohorts & limit_cohort_low),
+  range_sire_low <- ifelse(cohorts - rep_years_sire[2] < min(cohorts) & limit_cohort_low,
     min(cohorts), cohorts - rep_years_sire[2]
   )
 

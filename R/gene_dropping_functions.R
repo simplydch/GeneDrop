@@ -37,14 +37,15 @@ setMethod(
   c("gene_drop_object"),
   function(object) {
     cat("A gene_drop_object containing:\n")
-    num_loci <- ifelse (length(get_genotype_matrix(object)) > 0, length(get_genotype_matrix(object)[[1]]),0)
+    num_loci <- ifelse(length(get_genotype_matrix(object)) > 0, length(get_genotype_matrix(object)[[1]]), 0)
 
     cat("@genotype_matrix - A genotype matrix with", num_loci, "loci\n")
     cat("@haplotype_info - A list containing haplotype information for tracing alleles\n")
     cat("@pedigree - A pedigree containing", nrow(get_pedigree(object)), "individuals\n")
     cat("@map_info - A matrix containing mapping and recombination frequency information\n")
     cat("@model_info - A list containing the variable passed to the function\n")
-  })
+  }
+)
 
 
 
@@ -265,9 +266,16 @@ reduce_hap_code <- function(sire_hap_info, dam_hap_info) {
 genedrop <- function(pedigree, map_dist, chr_loci_num, found_hap, founders_unk = FALSE, founders_unk_cohorts = 1,
                      to_raw = TRUE, sample_hap = TRUE, recom_freq = "kosambi", progress=TRUE) {
 
+  # If passed dataframe convert to matrix (faster to work with)
+  if (is.data.frame(pedigree)) {
+    pedigree <- matrix(unlist(pedigree), ncol=ncol(pedigree), dimnames = list(NULL, names(pedigree)))
+  }
+
   # Check founder_sample
   if (is.logical(founders_unk) && founders_unk == TRUE) {
     stop("founders_unk should be FALSE or a vector")
+  } else {
+    founders_unk <- c(matrix(founders_unk))
   }
 
   # Check founder_unk_cohort
