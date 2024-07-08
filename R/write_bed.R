@@ -24,7 +24,23 @@ setMethod(
     fileoutbim = paste0(filename,'.bim')
     fileoutfam = paste0(filename,'.fam')
 
-    #
+    ## Check if file is writable - this is important because we don't 
+    # open the file until the end, after a lot of processing time
+    # and a locked file will cause a failure
+    
+    bedfile_writable <- tryCatch(
+      expr = {                      
+        output.file <- file(fileoutbed, "wb")
+        close(output.file)
+      },
+      error = function(e) e,
+      warning = function(w) w)
+
+    if(is(bedfile_writable, 'warning') | is(bedfile_writtable, 'error')){
+      stop(paste0("The requested bed file, ", 
+                  fileoutbed, 
+                  ", is not currently  writable.  Is it loaded as a BEDMatrix object?"))
+    }
 
     ### extract information and calculate dimension values
     num_ind = nrow(slot(gene_drop_object, "pedigree"))
